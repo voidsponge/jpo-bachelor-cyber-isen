@@ -113,10 +113,10 @@ const Spectator = () => {
   const fetchLeaderboard = async () => {
     try {
       const { data: submissions } = await supabase
-        .from("submissions")
+        .from("submissions_public")
         .select("user_id, player_id, submitted_at, challenge_id")
         .eq("is_correct", true)
-        .order("submitted_at", { ascending: true });
+        .order("submitted_at", { ascending: true }) as { data: any[] | null; error: any };
 
       const { data: challenges } = await supabase
         .from("challenges_public")

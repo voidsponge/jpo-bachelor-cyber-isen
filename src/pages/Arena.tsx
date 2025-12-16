@@ -48,14 +48,14 @@ const Arena = () => {
 
       if (challengesError) throw challengesError;
 
-      // Fetch solved challenges for authenticated users
+      // Fetch solved challenges for authenticated users from public view
       let userSolvedIds = new Set<string>();
       if (user) {
         const { data: submissions, error: submissionsError } = await supabase
-          .from("submissions")
+          .from("submissions_public")
           .select("challenge_id")
           .eq("user_id", user.id)
-          .eq("is_correct", true);
+          .eq("is_correct", true) as { data: any[] | null; error: any };
 
         if (!submissionsError && submissions) {
           userSolvedIds = new Set(submissions.map((s) => s.challenge_id));
@@ -73,10 +73,10 @@ const Arena = () => {
 
           if (player) {
             const { data: submissions } = await supabase
-              .from("submissions")
+              .from("submissions_public")
               .select("challenge_id")
               .eq("player_id", player.id)
-              .eq("is_correct", true);
+              .eq("is_correct", true) as { data: any[] | null; error: any };
 
             if (submissions) {
               userSolvedIds = new Set(submissions.map((s) => s.challenge_id));

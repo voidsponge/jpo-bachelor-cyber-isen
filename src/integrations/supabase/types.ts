@@ -230,6 +230,55 @@ export type Database = {
         }
         Relationships: []
       }
+      submissions_public: {
+        Row: {
+          challenge_id: string | null
+          id: string | null
+          is_correct: boolean | null
+          player_id: string | null
+          submitted_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          challenge_id?: string | null
+          id?: string | null
+          is_correct?: boolean | null
+          player_id?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          challenge_id?: string | null
+          id?: string | null
+          is_correct?: boolean | null
+          player_id?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_player_score: { Args: { _player_id: string }; Returns: number }

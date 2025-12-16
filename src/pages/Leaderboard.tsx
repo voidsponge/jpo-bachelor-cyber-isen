@@ -44,9 +44,9 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // Get all correct submissions
+      // Get all correct submissions from public view (excludes submitted_flag)
       const { data: submissions, error } = await supabase
-        .from("submissions")
+        .from("submissions_public")
         .select(`
           user_id,
           player_id,
@@ -54,14 +54,14 @@ const Leaderboard = () => {
           challenge_id
         `)
         .eq("is_correct", true)
-        .order("submitted_at", { ascending: true });
+        .order("submitted_at", { ascending: true }) as { data: any[] | null; error: any };
 
       if (error) throw error;
 
-      // Get challenge points
+      // Get challenge points from public view
       const { data: challenges } = await supabase
-        .from("challenges")
-        .select("id, points");
+        .from("challenges_public")
+        .select("id, points") as { data: { id: string; points: number }[] | null };
 
       const challengePoints = new Map(challenges?.map(c => [c.id, c.points]) || []);
 
