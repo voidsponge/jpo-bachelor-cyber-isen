@@ -147,6 +147,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "submissions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
@@ -178,7 +185,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      challenges_public: {
+        Row: {
+          category: Database["public"]["Enums"]["challenge_category"] | null
+          created_at: string | null
+          description: string | null
+          difficulty: number | null
+          file_url: string | null
+          hint: string | null
+          id: string | null
+          is_active: boolean | null
+          is_terminal_challenge: boolean | null
+          points: number | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["challenge_category"] | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: number | null
+          file_url?: string | null
+          hint?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_terminal_challenge?: boolean | null
+          points?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["challenge_category"] | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: number | null
+          file_url?: string | null
+          hint?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_terminal_challenge?: boolean | null
+          points?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_player_score: { Args: { _player_id: string }; Returns: number }

@@ -39,12 +39,12 @@ const Arena = () => {
   const fetchChallenges = async () => {
     setIsLoading(true);
     try {
-      // Fetch active challenges with difficulty and terminal flag
+      // Fetch active challenges from the public view (excludes flag column)
       const { data: challengesData, error: challengesError } = await supabase
-        .from("challenges")
+        .from("challenges_public")
         .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge")
         .eq("is_active", true)
-        .order("points", { ascending: true });
+        .order("points", { ascending: true }) as { data: any[] | null; error: any };
 
       if (challengesError) throw challengesError;
 
