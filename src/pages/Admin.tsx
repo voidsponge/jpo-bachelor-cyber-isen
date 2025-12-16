@@ -647,12 +647,40 @@ const Admin = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>URL Externe (Docker/VM)</Label>
-                      <Input
-                        value={formData.external_url}
-                        onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                        placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
-                        className="bg-background font-mono text-sm"
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          value={formData.external_url}
+                          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                          placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
+                          className="bg-background font-mono text-sm flex-1"
+                        />
+                        {formData.external_url && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`${formData.external_url}/api/verify`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ flag: 'TEST_CONNECTION' }),
+                                });
+                                if (response.ok) {
+                                  toast({ title: "✅ API accessible", description: "L'endpoint répond correctement." });
+                                } else {
+                                  toast({ title: "❌ Erreur API", description: `HTTP ${response.status}`, variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "❌ Connexion impossible", description: "Vérifiez l'URL et que le serveur est accessible.", variant: "destructive" });
+                              }
+                            }}
+                            className="whitespace-nowrap"
+                          >
+                            Tester API
+                          </Button>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         Lien vers un container Docker ou une VM hébergeant le challenge
                       </p>
