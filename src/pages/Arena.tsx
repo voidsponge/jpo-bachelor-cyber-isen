@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Trophy, Terminal, Zap, Loader2, Map } from "lucide-react";
+import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
 import TrollOverlay from "@/components/TrollOverlay";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -30,7 +28,6 @@ const getSessionId = () => {
 
 const Arena = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -146,23 +143,13 @@ const Arena = () => {
 
       <main className="container px-4 pt-24 pb-12">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
-              <span className="text-primary">CTF</span> Arena
-            </h1>
-            <p className="text-muted-foreground">
-              Résous les challenges pour gagner des points et grimper au classement
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/map")}
-            className="gap-2"
-          >
-            <Map className="h-4 w-4" />
-            Vue Donjon
-          </Button>
+        <div className="mb-8">
+          <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
+            <span className="text-primary">CTF</span> Arena
+          </h1>
+          <p className="text-muted-foreground">
+            Résous les challenges pour gagner des points et grimper au classement
+          </p>
         </div>
 
         {/* Stats Bar */}
