@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Terminal, Trophy, Shield, Home, LogIn, LogOut, Settings } from "lucide-react";
+import { Terminal, Trophy, Shield, Home, LogIn, LogOut, Settings, UserCog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,17 +67,21 @@ const Navbar = () => {
                     <span className="font-mono text-foreground">{username}</span>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                      <UserCog className="h-4 w-4" />
+                      Paramètres
+                    </Link>
+                  </DropdownMenuItem>
                   {isAdmin && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                          <Settings className="h-4 w-4" />
-                          Panel Admin
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <Settings className="h-4 w-4" />
+                        Panel Admin
+                      </Link>
+                    </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Déconnexion
