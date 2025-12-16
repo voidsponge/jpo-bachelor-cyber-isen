@@ -17,9 +17,9 @@ interface Challenge {
   solved: boolean;
 }
 
-// Get session ID for anonymous players
+// Get session ID for anonymous players (uses sessionStorage for per-session reset)
 const getSessionId = () => {
-  return localStorage.getItem('ctf_session_id');
+  return sessionStorage.getItem('ctf_session_id');
 };
 
 const Arena = () => {

@@ -26,12 +26,12 @@ interface ChallengeModalProps {
   onSolve: (challengeId: string) => void;
 }
 
-// Generate a unique session ID for anonymous players
+// Generate a unique session ID for anonymous players (uses sessionStorage for per-session reset)
 const getSessionId = () => {
-  let sessionId = localStorage.getItem('ctf_session_id');
+  let sessionId = sessionStorage.getItem('ctf_session_id');
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    localStorage.setItem('ctf_session_id', sessionId);
+    sessionStorage.setItem('ctf_session_id', sessionId);
   }
   return sessionId;
 };
