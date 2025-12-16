@@ -14,10 +14,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import TrollModePanel from "@/components/TrollModePanel";
+import ChallengeHeatmap from "@/components/admin/ChallengeHeatmap";
+import SessionReplay from "@/components/admin/SessionReplay";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
 
@@ -56,7 +58,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
-  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats" | "troll">("challenges");
+  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats" | "troll" | "heatmap" | "replay">("challenges");
   const [isResetting, setIsResetting] = useState(false);
   const [stats, setStats] = useState({ totalSubmissions: 0, totalPlayers: 0, correctSubmissions: 0 });
   const [chartData, setChartData] = useState<{ categoryStats: any[]; solvesByChallenge: any[] }>({ categoryStats: [], solvesByChallenge: [] });
@@ -547,6 +549,22 @@ const Admin = () => {
             <Ghost className="h-4 w-4" />
             Troll Mode 😈
           </Button>
+          <Button
+            variant={activeTab === "heatmap" ? "default" : "outline"}
+            onClick={() => setActiveTab("heatmap")}
+            className="gap-2"
+          >
+            <Flame className="h-4 w-4" />
+            Heatmap
+          </Button>
+          <Button
+            variant={activeTab === "replay" ? "default" : "outline"}
+            onClick={() => setActiveTab("replay")}
+            className="gap-2"
+          >
+            <Play className="h-4 w-4" />
+            Sessions
+          </Button>
           <div className="flex-1" />
           <Button variant="outline" className="gap-2" onClick={() => window.open("/spectator", "_blank")}>
             <Monitor className="h-4 w-4" />
@@ -557,6 +575,36 @@ const Admin = () => {
             Export CSV
           </Button>
         </div>
+
+        {/* Heatmap Tab */}
+        {activeTab === "heatmap" && (
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <CardTitle className="font-mono flex items-center gap-2">
+                <Flame className="h-5 w-5 text-orange-500" />
+                Heatmap des tentatives
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChallengeHeatmap />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Session Replay Tab */}
+        {activeTab === "replay" && (
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <CardTitle className="font-mono flex items-center gap-2">
+                <Play className="h-5 w-5 text-primary" />
+                Replay de session
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SessionReplay />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Troll Mode Tab */}
         {activeTab === "troll" && (
