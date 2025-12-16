@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Arena from "./pages/Arena";
 import Leaderboard from "./pages/Leaderboard";
+import Spectator from "./pages/Spectator";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/arena" element={<Arena />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/spectator" element={<Spectator />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
