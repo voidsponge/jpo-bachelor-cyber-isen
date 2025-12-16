@@ -11,6 +11,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Spectator from "./pages/Spectator";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import ChampionGrid from "./pages/ChampionGrid";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/arena" element={<Arena />} />
+            <Route path="/map" element={<ChampionGrid />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/spectator" element={<Spectator />} />
             <Route path="/admin" element={<Admin />} />
