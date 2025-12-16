@@ -14,7 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
 
@@ -51,6 +52,8 @@ const Admin = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "users">("challenges");
+  const [isResetting, setIsResetting] = useState(false);
+  const [stats, setStats] = useState({ totalSubmissions: 0, totalPlayers: 0, correctSubmissions: 0 });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -139,6 +142,19 @@ const Admin = () => {
       }));
 
       setSubmissions(formattedSubmissions);
+
+      // Fetch stats for reset info
+      const [submissionsCount, playersCount, correctCount] = await Promise.all([
+        supabase.from("submissions").select("id", { count: "exact", head: true }),
+        supabase.from("players").select("id", { count: "exact", head: true }),
+        supabase.from("submissions").select("id", { count: "exact", head: true }).eq("is_correct", true)
+      ]);
+
+      setStats({
+        totalSubmissions: submissionsCount.count || 0,
+        totalPlayers: playersCount.count || 0,
+        correctSubmissions: correctCount.count || 0
+      });
 
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -270,6 +286,44 @@ const Admin = () => {
     });
   };
 
+  const handleResetCTF = async () => {
+    setIsResetting(true);
+    try {
+      // Delete all submissions first (due to foreign key constraints)
+      const { error: submissionsError } = await supabase
+        .from("submissions")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+      if (submissionsError) throw submissionsError;
+
+      // Delete all anonymous players
+      const { error: playersError } = await supabase
+        .from("players")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+      if (playersError) throw playersError;
+
+      toast({
+        title: "🔄 CTF Réinitialisé",
+        description: "Toutes les soumissions et joueurs anonymes ont été supprimés",
+        className: "bg-primary/20 border-primary",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error resetting CTF:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de réinitialiser le CTF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -301,6 +355,64 @@ const Admin = () => {
             Rafraîchir
           </Button>
         </div>
+
+        {/* Reset CTF Card */}
+        <Card className="mb-6 bg-destructive/10 border-destructive/30">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-destructive/20">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="font-mono font-bold text-foreground">Réinitialiser le CTF</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {stats.totalSubmissions} soumissions • {stats.correctSubmissions} correctes • {stats.totalPlayers} joueurs anonymes
+                  </p>
+                </div>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="gap-2" disabled={isResetting}>
+                    {isResetting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    Réinitialiser
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-card">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="font-mono text-destructive">
+                      ⚠️ Réinitialiser le CTF ?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p>Cette action va supprimer :</p>
+                      <ul className="list-disc list-inside text-sm space-y-1">
+                        <li><strong>{stats.totalSubmissions}</strong> soumissions (correctes et incorrectes)</li>
+                        <li><strong>{stats.totalPlayers}</strong> joueurs anonymes</li>
+                        <li>Tout le classement sera remis à zéro</li>
+                      </ul>
+                      <p className="text-destructive font-medium mt-4">
+                        Cette action est irréversible !
+                      </p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleResetCTF}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Oui, réinitialiser tout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
