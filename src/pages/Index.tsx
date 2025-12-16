@@ -1,6 +1,17 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Terminal, Trophy, ChevronRight, Lock, Code, ExternalLink, GraduationCap, Zap, Users } from "lucide-react";
+import {
+  Shield,
+  Terminal,
+  Trophy,
+  ChevronRight,
+  Lock,
+  Code,
+  ExternalLink,
+  GraduationCap,
+  Zap,
+  Users,
+} from "lucide-react";
 import MatrixRain from "@/components/MatrixRain";
 import Navbar from "@/components/Navbar";
 
@@ -8,28 +19,28 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
-      
+
       {/* Hero Section - Full Screen Matrix */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Matrix Background - Full opacity */}
         <div className="absolute inset-0 bg-[#050a0f]">
-          <MatrixRain opacity={1} speed={0.5} density={1.2} />
+          <MatrixRain opacity={1} speed={0.25} density={1.2} />
         </div>
-        
+
         {/* Dark vignette overlay */}
         <div className="absolute inset-0 bg-gradient-radial from-transparent via-background/60 to-background pointer-events-none" />
-        
+
         {/* Scan line effect */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div 
+          <div
             className="absolute w-full h-[2px] bg-primary/20"
             style={{
               animation: "scan-line 4s linear infinite",
-              boxShadow: "0 0 50px 20px hsl(var(--primary) / 0.1)"
+              boxShadow: "0 0 50px 20px hsl(var(--primary) / 0.1)",
             }}
           />
         </div>
-        
+
         {/* Content */}
         <div className="container relative z-10 px-4 py-20">
           <div className="max-w-4xl mx-auto text-center">
@@ -43,29 +54,43 @@ const Index = () => {
                 JOURNÉES PORTES OUVERTES 2025
               </span>
             </div>
-            
+
             {/* Main title with glitch effect */}
-            <h1 className="font-mono text-6xl md:text-8xl font-bold mb-6 tracking-tight animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            <h1
+              className="font-mono text-6xl md:text-8xl font-bold mb-6 tracking-tight animate-fade-in"
+              style={{ animationDelay: "0.1s" }}
+            >
               <span className="relative inline-block">
-                <span className="text-primary glow-text glitch" data-text="ISEN">ISEN</span>
+                <span className="text-primary glow-text glitch" data-text="ISEN">
+                  ISEN
+                </span>
               </span>
               <br />
               <span className="text-foreground">CYBER</span>
               <span className="text-primary glow-text">CTF</span>
               <span className="terminal-cursor text-primary">_</span>
             </h1>
-            
+
             {/* Subtitle */}
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-4 animate-fade-in font-mono" style={{ animationDelay: "0.2s" }}>
+            <p
+              className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-4 animate-fade-in font-mono"
+              style={{ animationDelay: "0.2s" }}
+            >
               <span className="text-primary">&gt;</span> Capture The Flag Challenge
             </p>
-            <p className="text-lg text-foreground/80 max-w-xl mx-auto mb-10 animate-fade-in" style={{ animationDelay: "0.25s" }}>
-              Teste tes compétences en cybersécurité et découvre 
-              le <span className="text-primary font-semibold">Bachelor Cybersécurité</span> de l'ISEN
+            <p
+              className="text-lg text-foreground/80 max-w-xl mx-auto mb-10 animate-fade-in"
+              style={{ animationDelay: "0.25s" }}
+            >
+              Teste tes compétences en cybersécurité et découvre le{" "}
+              <span className="text-primary font-semibold">Bachelor Cybersécurité</span> de l'ISEN
             </p>
-            
+
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <div
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in"
+              style={{ animationDelay: "0.3s" }}
+            >
               <Link to="/arena">
                 <Button size="lg" className="font-mono gap-2 text-lg px-8 py-6 hover-glow group">
                   <Terminal className="h-5 w-5 group-hover:animate-pulse" />
@@ -74,7 +99,11 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/leaderboard">
-                <Button size="lg" variant="outline" className="font-mono gap-2 text-lg px-8 py-6 border-primary/30 hover:bg-primary/10 hover:border-primary">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="font-mono gap-2 text-lg px-8 py-6 border-primary/30 hover:bg-primary/10 hover:border-primary"
+                >
                   <Trophy className="h-5 w-5" />
                   Classement Live
                 </Button>
@@ -82,7 +111,10 @@ const Index = () => {
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-6 max-w-md mx-auto mt-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            <div
+              className="grid grid-cols-3 gap-6 max-w-md mx-auto mt-16 animate-fade-in"
+              style={{ animationDelay: "0.4s" }}
+            >
               <div className="text-center p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/20">
                 <div className="font-mono text-3xl font-bold text-primary glow-text">6</div>
                 <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Challenges</div>
@@ -131,7 +163,8 @@ const Index = () => {
               </div>
               <h3 className="font-mono text-xl font-semibold mb-3">Pentest & Red Team</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Apprends à identifier et exploiter les vulnérabilités. Tests d'intrusion, hacking éthique et simulation d'attaques.
+                Apprends à identifier et exploiter les vulnérabilités. Tests d'intrusion, hacking éthique et simulation
+                d'attaques.
               </p>
             </div>
 
@@ -182,20 +215,22 @@ const Index = () => {
 
           {/* CTA to School Page */}
           <div className="text-center">
-            <a 
-              href="https://isen-mediterranee.fr/formation/bachelor-cybersecurite/" 
-              target="_blank" 
+            <a
+              href="https://isen-mediterranee.fr/formation/bachelor-cybersecurite/"
+              target="_blank"
               rel="noopener noreferrer"
             >
-              <Button size="lg" variant="outline" className="font-mono gap-3 text-lg px-10 py-6 border-primary hover:bg-primary hover:text-primary-foreground transition-all group">
+              <Button
+                size="lg"
+                variant="outline"
+                className="font-mono gap-3 text-lg px-10 py-6 border-primary hover:bg-primary hover:text-primary-foreground transition-all group"
+              >
                 <GraduationCap className="h-5 w-5" />
                 Découvrir la formation
                 <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </a>
-            <p className="text-sm text-muted-foreground mt-4 font-mono">
-              isen-mediterranee.fr
-            </p>
+            <p className="text-sm text-muted-foreground mt-4 font-mono">isen-mediterranee.fr</p>
           </div>
         </div>
       </section>
@@ -235,9 +270,7 @@ const Index = () => {
                 3
               </div>
               <h3 className="font-mono text-lg font-semibold mb-2">Gagne des points</h3>
-              <p className="text-muted-foreground text-sm">
-                Monte dans le classement et montre que tu as le niveau !
-              </p>
+              <p className="text-muted-foreground text-sm">Monte dans le classement et montre que tu as le niveau !</p>
             </div>
           </div>
 
@@ -260,14 +293,12 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <Shield className="h-6 w-6 text-primary" />
               <div>
-                <span className="font-mono text-sm text-foreground font-semibold">
-                  ISEN Yncréa Méditerranée
-                </span>
+                <span className="font-mono text-sm text-foreground font-semibold">ISEN Yncréa Méditerranée</span>
                 <span className="text-muted-foreground text-sm ml-2">- Toulon</span>
               </div>
             </div>
             <div className="flex items-center gap-6">
-              <a 
+              <a
                 href="https://isen-mediterranee.fr/formation/bachelor-cybersecurite/"
                 target="_blank"
                 rel="noopener noreferrer"
