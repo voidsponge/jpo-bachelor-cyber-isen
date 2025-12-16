@@ -658,14 +658,20 @@ const Admin = () => {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Flag (réponse)</Label>
+                      <Label>Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel)</span>}</Label>
                       <Input
                         value={formData.flag}
                         onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                        required
-                        placeholder="ISEN{...}"
+                        required={!formData.external_url}
+                        disabled={!!formData.external_url}
+                        placeholder={formData.external_url ? "Géré par l'API externe" : "ISEN{...}"}
                         className="bg-background font-mono"
                       />
+                      {formData.external_url && (
+                        <p className="text-xs text-emerald-500">
+                          ✓ Le flag sera vérifié via l'API externe ({formData.external_url}/api/verify)
+                        </p>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
