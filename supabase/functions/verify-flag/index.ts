@@ -110,7 +110,7 @@ serve(async (req) => {
     // Get the challenge's correct flag (server-side only!)
     const { data: challenge, error: challengeError } = await supabaseClient
       .from('challenges')
-      .select('id, flag, points, title, is_active')
+      .select('id, flag, points, title, is_active, is_terminal_challenge')
       .eq('id', challengeId)
       .single();
 
@@ -129,9 +129,8 @@ serve(async (req) => {
       );
     }
 
-    // Check if this is a terminal/Linux challenge with dynamic flag
-    const isTerminalChallenge = challenge.title.toLowerCase().includes('linux') || 
-                                challenge.title.toLowerCase().includes('terminal');
+    // Check if this is a terminal challenge with dynamic flag
+    const isTerminalChallenge = challenge.is_terminal_challenge || false;
     const terminalFlagPattern = /^ISEN\{L1NUX_M4ST3R_[A-Z0-9]{8}\}$/i;
 
     // Check if already solved

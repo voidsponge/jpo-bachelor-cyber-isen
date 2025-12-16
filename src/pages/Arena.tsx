@@ -39,10 +39,10 @@ const Arena = () => {
   const fetchChallenges = async () => {
     setIsLoading(true);
     try {
-      // Fetch active challenges with difficulty
+      // Fetch active challenges with difficulty and terminal flag
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges")
-        .select("id, title, category, points, description, hint, file_url, difficulty")
+        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge")
         .eq("is_active", true)
         .order("points", { ascending: true });
 
@@ -92,8 +92,7 @@ const Arena = () => {
         category: c.category as Challenge["category"],
         solved: userSolvedIds.has(c.id),
         difficulty: c.difficulty || 1,
-        // Mark challenges with "Linux" or "Terminal" in title as terminal challenges
-        isTerminalChallenge: c.title.toLowerCase().includes('linux') || c.title.toLowerCase().includes('terminal'),
+        isTerminalChallenge: c.is_terminal_challenge || false,
       }));
 
       setChallenges(formattedChallenges);

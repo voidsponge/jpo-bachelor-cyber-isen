@@ -25,6 +25,7 @@ export type Database = {
           hint: string | null
           id: string
           is_active: boolean
+          is_terminal_challenge: boolean
           points: number
           title: string
           updated_at: string
@@ -39,6 +40,7 @@ export type Database = {
           hint?: string | null
           id?: string
           is_active?: boolean
+          is_terminal_challenge?: boolean
           points?: number
           title: string
           updated_at?: string
@@ -53,6 +55,7 @@ export type Database = {
           hint?: string | null
           id?: string
           is_active?: boolean
+          is_terminal_challenge?: boolean
           points?: number
           title?: string
           updated_at?: string
