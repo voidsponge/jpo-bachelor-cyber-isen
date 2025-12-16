@@ -4,8 +4,10 @@ import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
 import TrollOverlay from "@/components/TrollOverlay";
+import PlayerChatWidget from "@/components/PlayerChatWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlayerTracking } from "@/hooks/usePlayerTracking";
 
 interface Challenge {
   id: string;
@@ -33,6 +35,16 @@ const Arena = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+  const [playerId, setPlayerId] = useState<string | undefined>();
+
+  const sessionId = getSessionId() || '';
+  
+  // Initialize player tracking
+  const { trackEvent } = usePlayerTracking({
+    sessionId,
+    playerId,
+    userId: user?.id
+  });
 
   useEffect(() => {
     fetchChallenges();
@@ -74,6 +86,7 @@ const Arena = () => {
             .maybeSingle();
 
           if (player) {
+            setPlayerId(player.id);
             const { data: submissions } = await supabase
               .from("submissions_public")
               .select("challenge_id")
@@ -237,6 +250,8 @@ const Arena = () => {
       />
 
       <TrollOverlay />
+      
+      {sessionId && <PlayerChatWidget sessionId={sessionId} playerId={playerId} />}
     </div>
   );
 };
