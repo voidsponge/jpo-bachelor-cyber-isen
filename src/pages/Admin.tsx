@@ -14,12 +14,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost, Flame, Play, Radio } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import TrollModePanel from "@/components/TrollModePanel";
 import ChallengeHeatmap from "@/components/admin/ChallengeHeatmap";
 import SessionReplay from "@/components/admin/SessionReplay";
+import LiveSessionViewer from "@/components/admin/LiveSessionViewer";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
 
@@ -58,7 +59,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
-  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats" | "troll" | "heatmap" | "replay">("challenges");
+  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats" | "troll" | "heatmap" | "replay" | "live">("challenges");
   const [isResetting, setIsResetting] = useState(false);
   const [stats, setStats] = useState({ totalSubmissions: 0, totalPlayers: 0, correctSubmissions: 0 });
   const [chartData, setChartData] = useState<{ categoryStats: any[]; solvesByChallenge: any[] }>({ categoryStats: [], solvesByChallenge: [] });
@@ -565,6 +566,14 @@ const Admin = () => {
             <Play className="h-4 w-4" />
             Sessions
           </Button>
+          <Button
+            variant={activeTab === "live" ? "default" : "outline"}
+            onClick={() => setActiveTab("live")}
+            className="gap-2"
+          >
+            <Radio className="h-4 w-4" />
+            Live & Chat
+          </Button>
           <div className="flex-1" />
           <Button variant="outline" className="gap-2" onClick={() => window.open("/spectator", "_blank")}>
             <Monitor className="h-4 w-4" />
@@ -587,6 +596,21 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <ChallengeHeatmap />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Live Session & Chat Tab */}
+        {activeTab === "live" && (
+          <Card className="bg-card/50 border-border">
+            <CardHeader>
+              <CardTitle className="font-mono flex items-center gap-2">
+                <Radio className="h-5 w-5 text-green-500 animate-pulse" />
+                Sessions en direct & Chat
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LiveSessionViewer />
             </CardContent>
           </Card>
         )}
