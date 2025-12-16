@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +16,30 @@ import {
 import MatrixRain from "@/components/MatrixRain";
 import Navbar from "@/components/Navbar";
 import TrollOverlay from "@/components/TrollOverlay";
+import PlayerChatWidget from "@/components/PlayerChatWidget";
+import { usePlayerTracking } from "@/hooks/usePlayerTracking";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Get or create session ID for tracking
+const getOrCreateSessionId = () => {
+  let sessionId = sessionStorage.getItem('ctf_session_id');
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem('ctf_session_id', sessionId);
+  }
+  return sessionId;
+};
 
 const Index = () => {
+  const { user } = useAuth();
+  const sessionId = getOrCreateSessionId();
+  
+  // Initialize tracking
+  usePlayerTracking({
+    sessionId,
+    userId: user?.id
+  });
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
@@ -317,6 +340,7 @@ const Index = () => {
       </footer>
 
       <TrollOverlay />
+      <PlayerChatWidget sessionId={sessionId} />
     </div>
   );
 };

@@ -23,9 +23,14 @@ interface Challenge {
   externalUrl?: string | null;
 }
 
-// Get session ID for anonymous players (uses sessionStorage for per-session reset)
-const getSessionId = () => {
-  return sessionStorage.getItem('ctf_session_id');
+// Get or create session ID for tracking (always generates one for visitors)
+const getOrCreateSessionId = () => {
+  let sessionId = sessionStorage.getItem('ctf_session_id');
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem('ctf_session_id', sessionId);
+  }
+  return sessionId;
 };
 
 const Arena = () => {
@@ -37,7 +42,7 @@ const Arena = () => {
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [playerId, setPlayerId] = useState<string | undefined>();
 
-  const sessionId = getSessionId() || '';
+  const sessionId = getOrCreateSessionId();
   
   // Initialize player tracking
   const { trackEvent } = usePlayerTracking({
@@ -76,13 +81,13 @@ const Arena = () => {
         }
       } else {
         // Check for anonymous player's solved challenges
-        const sessionId = getSessionId();
-        if (sessionId) {
+        const currentSessionId = sessionStorage.getItem('ctf_session_id');
+        if (currentSessionId) {
           // First get player_id from session
           const { data: player } = await supabase
             .from("players")
             .select("id")
-            .eq("session_id", sessionId)
+            .eq("session_id", currentSessionId)
             .maybeSingle();
 
           if (player) {
