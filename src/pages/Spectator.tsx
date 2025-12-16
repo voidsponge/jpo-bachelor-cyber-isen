@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import MatrixRain from "@/components/MatrixRain";
+import TrollOverlay from "@/components/TrollOverlay";
 
 interface LeaderboardEntry {
   rank: number;
@@ -372,6 +373,8 @@ const Spectator = () => {
           <span className="font-mono">{leaderboard.length} participants</span>
         </div>
       </div>
+
+      <TrollOverlay />
     </div>
   );
 };
