@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
@@ -29,6 +29,8 @@ interface Challenge {
   flag: string;
   is_active: boolean;
   created_at: string;
+  difficulty: number;
+  is_terminal_challenge: boolean;
 }
 
 interface Submission {
@@ -64,6 +66,8 @@ const Admin = () => {
     hint: "",
     flag: "",
     is_active: true,
+    difficulty: 1,
+    is_terminal_challenge: false,
   });
 
   useEffect(() => {
@@ -269,6 +273,8 @@ const Admin = () => {
       hint: challenge.hint || "",
       flag: challenge.flag,
       is_active: challenge.is_active,
+      difficulty: challenge.difficulty || 1,
+      is_terminal_challenge: challenge.is_terminal_challenge || false,
     });
     setIsDialogOpen(true);
   };
@@ -283,6 +289,8 @@ const Admin = () => {
       hint: "",
       flag: "",
       is_active: true,
+      difficulty: 1,
+      is_terminal_challenge: false,
     });
   };
 
@@ -525,6 +533,40 @@ const Admin = () => {
                         placeholder="ISEN{...}"
                         className="bg-background font-mono"
                       />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Skull className="h-4 w-4" />
+                          Difficulté
+                        </Label>
+                        <Select
+                          value={formData.difficulty.toString()}
+                          onValueChange={(value) => setFormData({ ...formData, difficulty: parseInt(value) })}
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">💀 Facile</SelectItem>
+                            <SelectItem value="2">💀💀 Moyen</SelectItem>
+                            <SelectItem value="3">💀💀💀 Difficile</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Terminal className="h-4 w-4" />
+                          Options
+                        </Label>
+                        <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-background">
+                          <Switch
+                            checked={formData.is_terminal_challenge}
+                            onCheckedChange={(checked) => setFormData({ ...formData, is_terminal_challenge: checked })}
+                          />
+                          <span className="text-sm">Terminal Linux</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
