@@ -14,8 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
 
@@ -53,9 +54,10 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
-  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "users">("challenges");
+  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats">("challenges");
   const [isResetting, setIsResetting] = useState(false);
   const [stats, setStats] = useState({ totalSubmissions: 0, totalPlayers: 0, correctSubmissions: 0 });
+  const [chartData, setChartData] = useState<{ categoryStats: any[]; solvesByChallenge: any[] }>({ categoryStats: [], solvesByChallenge: [] });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -159,6 +161,31 @@ const Admin = () => {
         totalPlayers: playersCount.count || 0,
         correctSubmissions: correctCount.count || 0
       });
+
+      // Calculate chart data
+      const categoryStats = challengesData?.reduce((acc: any[], c: any) => {
+        const existing = acc.find(item => item.category === c.category);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          acc.push({ category: c.category, count: 1 });
+        }
+        return acc;
+      }, []) || [];
+
+      // Solves by challenge
+      const { data: allCorrectSubmissions } = await supabase
+        .from("submissions")
+        .select("challenge_id")
+        .eq("is_correct", true);
+
+      const solvesByChallenge = challengesData?.map((c: any) => ({
+        name: c.title.length > 15 ? c.title.substring(0, 15) + "..." : c.title,
+        solves: allCorrectSubmissions?.filter(s => s.challenge_id === c.id).length || 0,
+        points: c.points
+      })).sort((a: any, b: any) => b.solves - a.solves).slice(0, 10) || [];
+
+      setChartData({ categoryStats, solvesByChallenge });
 
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -332,6 +359,65 @@ const Admin = () => {
     }
   };
 
+  const exportLeaderboardCSV = async () => {
+    try {
+      const { data: subs } = await supabase
+        .from("submissions")
+        .select("user_id, player_id, challenge_id, submitted_at")
+        .eq("is_correct", true);
+
+      const { data: challengesList } = await supabase.from("challenges").select("id, title, points");
+      const { data: profilesList } = await supabase.from("profiles").select("user_id, username");
+      const { data: playersList } = await supabase.from("players").select("id, pseudo");
+
+      const challengeMap = new Map(challengesList?.map(c => [c.id, c]) || []);
+      const profileMap = new Map(profilesList?.map(p => [p.user_id, p.username]) || []);
+      const playerMap = new Map(playersList?.map(p => [p.id, p.pseudo]) || []);
+
+      const playerStats = new Map<string, { username: string; score: number; solvedCount: number; lastSolve: string }>();
+
+      subs?.forEach(sub => {
+        const key = sub.user_id || sub.player_id;
+        if (!key) return;
+        const username = sub.user_id ? (profileMap.get(sub.user_id) || "Inconnu") : (playerMap.get(sub.player_id!) || "Anonyme");
+        const challenge = challengeMap.get(sub.challenge_id);
+        const points = challenge?.points || 0;
+        const existing = playerStats.get(key);
+        if (existing) {
+          existing.score += points;
+          existing.solvedCount += 1;
+          if (sub.submitted_at > existing.lastSolve) existing.lastSolve = sub.submitted_at;
+        } else {
+          playerStats.set(key, { username, score: points, solvedCount: 1, lastSolve: sub.submitted_at });
+        }
+      });
+
+      const sorted = Array.from(playerStats.values()).sort((a, b) => b.score - a.score);
+      const csv = "Rang,Joueur,Score,Challenges Résolus,Dernier Flag\n" + 
+        sorted.map((p, i) => `${i + 1},"${p.username}",${p.score},${p.solvedCount},"${new Date(p.lastSolve).toLocaleString("fr-FR")}"`).join("\n");
+
+      downloadCSV(csv, "leaderboard.csv");
+      toast({ title: "Export réussi", description: "Leaderboard exporté en CSV" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'exporter", variant: "destructive" });
+    }
+  };
+
+  const exportSubmissionsCSV = () => {
+    const csv = "Joueur,Challenge,Flag Soumis,Correct,Date\n" + 
+      submissions.map(s => `"${s.username}","${s.challenge_title}","${s.submitted_flag}",${s.is_correct},"${new Date(s.submitted_at).toLocaleString("fr-FR")}"`).join("\n");
+    downloadCSV(csv, "submissions.csv");
+    toast({ title: "Export réussi", description: "Soumissions exportées en CSV" });
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -423,7 +509,7 @@ const Admin = () => {
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <Button
             variant={activeTab === "challenges" ? "default" : "outline"}
             onClick={() => setActiveTab("challenges")}
@@ -439,6 +525,23 @@ const Admin = () => {
           >
             <Shield className="h-4 w-4" />
             Soumissions ({submissions.length})
+          </Button>
+          <Button
+            variant={activeTab === "stats" ? "default" : "outline"}
+            onClick={() => setActiveTab("stats")}
+            className="gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Statistiques
+          </Button>
+          <div className="flex-1" />
+          <Button variant="outline" className="gap-2" onClick={() => window.open("/spectator", "_blank")}>
+            <Monitor className="h-4 w-4" />
+            Mode Spectateur
+          </Button>
+          <Button variant="outline" className="gap-2" onClick={exportLeaderboardCSV}>
+            <Download className="h-4 w-4" />
+            Export CSV
           </Button>
         </div>
 
@@ -683,6 +786,127 @@ const Admin = () => {
               </Table>
             </CardContent>
           </Card>
+        )}
+
+        {/* Stats Tab */}
+        {activeTab === "stats" && (
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid md:grid-cols-4 gap-4">
+              <Card className="bg-card/50 border-border">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="font-mono text-4xl font-bold text-primary">{stats.totalSubmissions}</div>
+                    <div className="text-sm text-muted-foreground">Total Soumissions</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-border">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="font-mono text-4xl font-bold text-green-500">{stats.correctSubmissions}</div>
+                    <div className="text-sm text-muted-foreground">Flags Corrects</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-border">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="font-mono text-4xl font-bold text-blue-500">{stats.totalPlayers}</div>
+                    <div className="text-sm text-muted-foreground">Joueurs Anonymes</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-border">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="font-mono text-4xl font-bold text-yellow-500">
+                      {stats.totalSubmissions > 0 ? Math.round((stats.correctSubmissions / stats.totalSubmissions) * 100) : 0}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">Taux de Réussite</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Solves by Challenge */}
+              <Card className="bg-card/50 border-border">
+                <CardHeader>
+                  <CardTitle className="font-mono">Résolutions par Challenge</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData.solvesByChallenge} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                        <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                        />
+                        <Bar dataKey="solves" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Category Distribution */}
+              <Card className="bg-card/50 border-border">
+                <CardHeader>
+                  <CardTitle className="font-mono">Challenges par Catégorie</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData.categoryStats}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          dataKey="count"
+                          nameKey="category"
+                          label={({ category, count }) => `${category}: ${count}`}
+                        >
+                          {chartData.categoryStats.map((_, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={["#3B82F6", "#EAB308", "#8B5CF6", "#EC4899", "#F97316", "#06B6D4"][index % 6]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Export Options */}
+            <Card className="bg-card/50 border-border">
+              <CardHeader>
+                <CardTitle className="font-mono">Exporter les Données</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <Button onClick={exportLeaderboardCSV} variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exporter le Leaderboard
+                  </Button>
+                  <Button onClick={exportSubmissionsCSV} variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exporter les Soumissions
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </main>
     </div>
