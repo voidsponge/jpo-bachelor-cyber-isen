@@ -13,7 +13,7 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Matrix Background - Full opacity */}
         <div className="absolute inset-0 bg-[#050a0f]">
-          <MatrixRain opacity={1} speed={1.2} density={1.5} />
+          <MatrixRain opacity={1} speed={0.5} density={1.2} />
         </div>
         
         {/* Dark vignette overlay */}
