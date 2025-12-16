@@ -15,6 +15,8 @@ interface Challenge {
   hint: string | null;
   file_url: string | null;
   solved: boolean;
+  difficulty: number;
+  isTerminalChallenge?: boolean;
 }
 
 // Get session ID for anonymous players (uses sessionStorage for per-session reset)
@@ -37,10 +39,10 @@ const Arena = () => {
   const fetchChallenges = async () => {
     setIsLoading(true);
     try {
-      // Fetch active challenges
+      // Fetch active challenges with difficulty
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges")
-        .select("id, title, category, points, description, hint, file_url")
+        .select("id, title, category, points, description, hint, file_url, difficulty")
         .eq("is_active", true)
         .order("points", { ascending: true });
 
@@ -89,6 +91,9 @@ const Arena = () => {
         ...c,
         category: c.category as Challenge["category"],
         solved: userSolvedIds.has(c.id),
+        difficulty: c.difficulty || 1,
+        // Mark challenges with "Linux" or "Terminal" in title as terminal challenges
+        isTerminalChallenge: c.title.toLowerCase().includes('linux') || c.title.toLowerCase().includes('terminal'),
       }));
 
       setChallenges(formattedChallenges);

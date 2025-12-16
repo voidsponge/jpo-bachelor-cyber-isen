@@ -129,6 +129,11 @@ serve(async (req) => {
       );
     }
 
+    // Check if this is a terminal/Linux challenge with dynamic flag
+    const isTerminalChallenge = challenge.title.toLowerCase().includes('linux') || 
+                                challenge.title.toLowerCase().includes('terminal');
+    const terminalFlagPattern = /^ISEN\{L1NUX_M4ST3R_[A-Z0-9]{8}\}$/i;
+
     // Check if already solved
     let existingQuery = supabaseClient
       .from('submissions')
@@ -155,8 +160,15 @@ serve(async (req) => {
       );
     }
 
-    // Compare flags (case-insensitive)
-    const isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
+    // Compare flags
+    // For terminal challenges, accept any valid dynamic flag format
+    // For regular challenges, compare against the database flag
+    let isCorrect = false;
+    if (isTerminalChallenge && terminalFlagPattern.test(submittedFlag.trim())) {
+      isCorrect = true;
+    } else {
+      isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
+    }
 
     // Record the submission
     const submissionData: any = {

@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User } from "lucide-react";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull } from "lucide-react";
+import confetti from "canvas-confetti";
+import LinuxTerminal from "./LinuxTerminal";
 
 interface Challenge {
   id: string;
@@ -17,7 +19,56 @@ interface Challenge {
   hint: string | null;
   file_url: string | null;
   solved?: boolean;
+  difficulty?: number;
+  isTerminalChallenge?: boolean;
 }
+
+// Confetti celebration function
+const triggerConfetti = () => {
+  const duration = 3000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+  const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+  const interval = setInterval(() => {
+    const timeLeft = animationEnd - Date.now();
+    if (timeLeft <= 0) {
+      clearInterval(interval);
+      return;
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+    
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      colors: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0'],
+    });
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      colors: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0'],
+    });
+  }, 250);
+};
+
+const DifficultyIndicator = ({ level }: { level: number }) => {
+  const skulls = Array.from({ length: 3 }, (_, i) => (
+    <Skull
+      key={i}
+      className={`h-4 w-4 ${i < level ? "text-red-500" : "text-muted-foreground/30"}`}
+    />
+  ));
+  const labels = ["Facile", "Moyen", "Difficile"];
+  return (
+    <div className="flex items-center gap-1" title={labels[level - 1] || "Facile"}>
+      {skulls}
+    </div>
+  );
+};
 
 interface ChallengeModalProps {
   challenge: Challenge | null;
@@ -36,13 +87,29 @@ const getSessionId = () => {
   return sessionId;
 };
 
+// Generate random flag for terminal challenges
+const generateTerminalFlag = () => {
+  const randomPart = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `ISEN{L1NUX_M4ST3R_${randomPart}}`;
+};
+
 const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalProps) => {
   const [flag, setFlag] = useState("");
   const [pseudo, setPseudo] = useState(() => localStorage.getItem('ctf_pseudo') || "");
   const [isChecking, setIsChecking] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [terminalFlag, setTerminalFlag] = useState("");
+  const [terminalFlagFound, setTerminalFlagFound] = useState(false);
   const { toast } = useToast();
   const { user, session } = useAuth();
+
+  // Generate terminal flag when modal opens for terminal challenges
+  useEffect(() => {
+    if (isOpen && challenge?.isTerminalChallenge && !challenge.solved) {
+      setTerminalFlag(generateTerminalFlag());
+      setTerminalFlagFound(false);
+    }
+  }, [isOpen, challenge?.id, challenge?.isTerminalChallenge, challenge?.solved]);
 
   // Save pseudo to localStorage when it changes
   useEffect(() => {
@@ -100,6 +167,9 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
       }
 
       if (data.success) {
+        // Trigger confetti celebration!
+        triggerConfetti();
+        
         toast({
           title: "🎉 Flag correct !",
           description: data.message,
@@ -108,7 +178,9 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         onSolve(challenge.id);
         setFlag("");
         setShowHint(false);
-        onClose();
+        
+        // Delay close to see confetti
+        setTimeout(() => onClose(), 1500);
       } else if (data.alreadySolved) {
         toast({
           title: "Déjà résolu",
@@ -135,13 +207,13 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className={`bg-card border-border ${challenge.isTerminalChallenge ? 'sm:max-w-2xl' : 'sm:max-w-lg'}`}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
               <Terminal className="h-5 w-5 text-primary" />
             </div>
-            <div>
+            <div className="flex-1">
               <DialogTitle className="font-mono text-xl">{challenge.title}</DialogTitle>
               <DialogDescription className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="font-mono">
@@ -150,6 +222,9 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                 <span className="text-primary font-mono font-bold">
                   {challenge.points} pts
                 </span>
+                {challenge.difficulty && (
+                  <DifficultyIndicator level={challenge.difficulty} />
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -159,6 +234,32 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
           <div className="p-4 rounded-lg bg-secondary/50 border border-border">
             <p className="text-foreground leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
           </div>
+
+          {/* Linux Terminal for terminal challenges */}
+          {challenge.isTerminalChallenge && !challenge.solved && terminalFlag && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground font-mono">
+                Terminal interactif - trouve le flag caché dans le système de fichiers
+              </p>
+              <LinuxTerminal 
+                secretFlag={terminalFlag} 
+                onFlagFound={() => {
+                  setTerminalFlagFound(true);
+                  setFlag(terminalFlag);
+                  toast({
+                    title: "🔍 Flag trouvé !",
+                    description: "Le flag a été copié. Soumets-le pour valider !",
+                    className: "bg-primary/20 border-primary text-foreground",
+                  });
+                }} 
+              />
+              {terminalFlagFound && (
+                <p className="text-sm text-primary font-mono animate-pulse">
+                  ✓ Flag trouvé et copié dans le champ ci-dessous !
+                </p>
+              )}
+            </div>
+          )}
 
           {challenge.hint && (
             <div>
