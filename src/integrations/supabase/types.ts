@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string
           difficulty: number
+          external_url: string | null
           file_url: string | null
           flag: string
           hint: string | null
@@ -35,6 +36,7 @@ export type Database = {
           created_at?: string
           description: string
           difficulty?: number
+          external_url?: string | null
           file_url?: string | null
           flag: string
           hint?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           created_at?: string
           description?: string
           difficulty?: number
+          external_url?: string | null
           file_url?: string | null
           flag?: string
           hint?: string | null
@@ -191,6 +194,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           difficulty: number | null
+          external_url: string | null
           file_url: string | null
           hint: string | null
           id: string | null
@@ -205,6 +209,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           difficulty?: number | null
+          external_url?: string | null
           file_url?: string | null
           hint?: string | null
           id?: string | null
@@ -219,6 +224,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           difficulty?: number | null
+          external_url?: string | null
           file_url?: string | null
           hint?: string | null
           id?: string | null

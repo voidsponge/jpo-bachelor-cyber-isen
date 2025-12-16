@@ -18,6 +18,7 @@ interface Challenge {
   solved: boolean;
   difficulty: number;
   isTerminalChallenge?: boolean;
+  externalUrl?: string | null;
 }
 
 // Get session ID for anonymous players (uses sessionStorage for per-session reset)
@@ -43,7 +44,7 @@ const Arena = () => {
       // Fetch active challenges from the public view (excludes flag column)
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges_public")
-        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge")
+        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url")
         .eq("is_active", true)
         .order("points", { ascending: true }) as { data: any[] | null; error: any };
 
@@ -94,6 +95,7 @@ const Arena = () => {
         solved: userSolvedIds.has(c.id),
         difficulty: c.difficulty || 1,
         isTerminalChallenge: c.is_terminal_challenge || false,
+        externalUrl: c.external_url || null,
       }));
 
       setChallenges(formattedChallenges);
