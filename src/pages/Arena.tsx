@@ -4,10 +4,8 @@ import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
 import TrollOverlay from "@/components/TrollOverlay";
-import PlayerChatWidget from "@/components/PlayerChatWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePlayerTracking } from "@/hooks/usePlayerTracking";
 
 interface Challenge {
   id: string;
@@ -23,14 +21,9 @@ interface Challenge {
   externalUrl?: string | null;
 }
 
-// Get or create session ID for tracking (always generates one for visitors)
-const getOrCreateSessionId = () => {
-  let sessionId = sessionStorage.getItem('ctf_session_id');
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem('ctf_session_id', sessionId);
-  }
-  return sessionId;
+// Get session ID for anonymous players
+const getSessionId = () => {
+  return sessionStorage.getItem('ctf_session_id');
 };
 
 const Arena = () => {
@@ -41,15 +34,6 @@ const Arena = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [playerId, setPlayerId] = useState<string | undefined>();
-
-  const sessionId = getOrCreateSessionId();
-  
-  // Initialize player tracking
-  const { trackEvent } = usePlayerTracking({
-    sessionId,
-    playerId,
-    userId: user?.id
-  });
 
   useEffect(() => {
     fetchChallenges();
@@ -255,8 +239,6 @@ const Arena = () => {
       />
 
       <TrollOverlay />
-      
-      {sessionId && <PlayerChatWidget sessionId={sessionId} playerId={playerId} />}
     </div>
   );
 };
