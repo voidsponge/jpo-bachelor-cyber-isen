@@ -19,6 +19,7 @@ export type Database = {
           category: Database["public"]["Enums"]["challenge_category"]
           created_at: string
           description: string
+          difficulty: number
           file_url: string | null
           flag: string
           hint: string | null
@@ -32,6 +33,7 @@ export type Database = {
           category: Database["public"]["Enums"]["challenge_category"]
           created_at?: string
           description: string
+          difficulty?: number
           file_url?: string | null
           flag: string
           hint?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["challenge_category"]
           created_at?: string
           description?: string
+          difficulty?: number
           file_url?: string | null
           flag?: string
           hint?: string | null

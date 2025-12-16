@@ -1,4 +1,4 @@
-import { Lock, CheckCircle2, Globe, Search, Key, Image, Code, Network } from "lucide-react";
+import { Lock, CheckCircle2, Globe, Search, Key, Image, Code, Network, Skull } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,7 +12,27 @@ export interface Challenge {
   file_url?: string | null;
   solved: boolean;
   firstBlood?: string;
+  difficulty?: number;
 }
+
+const DifficultyIndicator = ({ level }: { level: number }) => {
+  const skulls = Array.from({ length: 3 }, (_, i) => (
+    <Skull
+      key={i}
+      className={`h-3.5 w-3.5 ${
+        i < level ? "text-red-500" : "text-muted-foreground/30"
+      }`}
+    />
+  ));
+  
+  const labels = ["Facile", "Moyen", "Difficile"];
+  
+  return (
+    <div className="flex items-center gap-1" title={labels[level - 1] || "Facile"}>
+      {skulls}
+    </div>
+  );
+};
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -75,10 +95,13 @@ const ChallengeCard = ({ challenge, onClick }: ChallengeCardProps) => {
           {challenge.description}
         </p>
         <div className="flex items-center justify-between pt-2">
-          <span className="font-mono text-2xl font-bold text-primary glow-text">
-            {challenge.points}
-            <span className="text-sm text-muted-foreground ml-1">pts</span>
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-2xl font-bold text-primary glow-text">
+              {challenge.points}
+              <span className="text-sm text-muted-foreground ml-1">pts</span>
+            </span>
+            <DifficultyIndicator level={challenge.difficulty || 1} />
+          </div>
           {challenge.firstBlood && (
             <Badge variant="secondary" className="font-mono text-xs bg-destructive/20 text-destructive border-destructive/30">
               🩸 {challenge.firstBlood}
