@@ -1,0 +1,71 @@
+import { Challenge } from "@/components/ChallengeCard";
+
+export const challenges: Challenge[] = [
+  {
+    id: "1",
+    title: "L'envers du décor",
+    category: "Web",
+    points: 100,
+    description: "Un bon hacker regarde toujours sous le capot. Le flag se cache peut-être plus près que tu ne le penses... As-tu pensé à inspecter le code source ?",
+    solved: false,
+    firstBlood: undefined,
+  },
+  {
+    id: "2",
+    title: "Détective numérique",
+    category: "OSINT",
+    points: 150,
+    description: "L'information est partout pour celui qui sait chercher. Trouve le nom du directeur de l'ISEN Méditerranée et encode-le pour obtenir le flag.",
+    solved: false,
+    firstBlood: undefined,
+  },
+  {
+    id: "3",
+    title: "Le code de César",
+    category: "Crypto",
+    points: 200,
+    description: "Jules César utilisait ce chiffrement pour ses messages secrets. Décode ce message : 'LVHQ{fdhvdu_flskhu_fudfnhg}' (décalage de 3).",
+    solved: false,
+    firstBlood: undefined,
+  },
+  {
+    id: "4",
+    title: "Image trompeuse",
+    category: "Stegano",
+    points: 250,
+    description: "Une image vaut mille mots... ou parfois juste un flag bien caché. Télécharge l'image et examine-la sous tous les angles.",
+    solved: false,
+    firstBlood: undefined,
+  },
+  {
+    id: "5",
+    title: "Le bon mot de passe",
+    category: "Logic",
+    points: 300,
+    description: "Ce système accepte n'importe quel mot de passe... à condition qu'il fasse exactement 12 caractères et se termine par '!'. Trouve le flag !",
+    solved: false,
+    firstBlood: undefined,
+  },
+  {
+    id: "6",
+    title: "Écoute indiscrète",
+    category: "Forensics",
+    points: 500,
+    description: "Un fichier de capture réseau a été intercepté. Quelqu'un a laissé passer un mot de passe en clair... Analyse le trafic pour trouver le flag.",
+    solved: false,
+    firstBlood: undefined,
+  },
+];
+
+export const leaderboardData = [
+  { rank: 1, username: "CyberN1nja", score: 950, solvedCount: 5, lastSolve: "Il y a 2 min" },
+  { rank: 2, username: "H4ck3rM4n", score: 750, solvedCount: 4, lastSolve: "Il y a 5 min" },
+  { rank: 3, username: "ByteRunner", score: 600, solvedCount: 3, lastSolve: "Il y a 8 min" },
+  { rank: 4, username: "CodeBreaker", score: 450, solvedCount: 3, lastSolve: "Il y a 12 min" },
+  { rank: 5, username: "NetWizard", score: 350, solvedCount: 2, lastSolve: "Il y a 15 min" },
+  { rank: 6, username: "CryptoKid", score: 250, solvedCount: 2, lastSolve: "Il y a 20 min" },
+  { rank: 7, username: "BinExplorer", score: 200, solvedCount: 2, lastSolve: "Il y a 25 min" },
+  { rank: 8, username: "TerminalPro", score: 150, solvedCount: 1, lastSolve: "Il y a 30 min" },
+  { rank: 9, username: "SecurityFirst", score: 100, solvedCount: 1, lastSolve: "Il y a 35 min" },
+  { rank: 10, username: "NewbiePwner", score: 100, solvedCount: 1, lastSolve: "Il y a 40 min" },
+];
