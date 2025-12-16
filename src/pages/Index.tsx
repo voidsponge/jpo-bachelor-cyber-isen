@@ -52,7 +52,7 @@ const Index = () => {
                 <div className="absolute inset-0 h-3 w-3 rounded-full bg-primary animate-ping" />
               </div>
               <span className="font-mono text-sm text-primary font-semibold tracking-wider">
-                JOURNÉES PORTES OUVERTES 2025
+                JOURNÉES PORTES OUVERTES 2026
               </span>
             </div>
 
