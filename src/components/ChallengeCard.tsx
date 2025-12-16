@@ -8,6 +8,8 @@ export interface Challenge {
   category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
   points: number;
   description: string;
+  hint?: string | null;
+  file_url?: string | null;
   solved: boolean;
   firstBlood?: string;
 }
