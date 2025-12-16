@@ -199,7 +199,7 @@ const Index = () => {
             </div>
             <div className="text-center p-6 rounded-xl border border-border bg-card/30">
               <Users className="h-6 w-6 text-primary mx-auto mb-2" />
-              <div className="font-mono text-2xl font-bold text-foreground">100%</div>
+              <div className="font-mono text-2xl font-bold text-foreground">90%</div>
               <div className="text-xs text-muted-foreground">Employabilité</div>
             </div>
             <div className="text-center p-6 rounded-xl border border-border bg-card/30">
