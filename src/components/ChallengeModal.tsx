@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Terminal, Download, Lightbulb, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User } from "lucide-react";
 
 interface Challenge {
   id: string;
@@ -27,39 +26,73 @@ interface ChallengeModalProps {
   onSolve: (challengeId: string) => void;
 }
 
+// Generate a unique session ID for anonymous players
+const getSessionId = () => {
+  let sessionId = localStorage.getItem('ctf_session_id');
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('ctf_session_id', sessionId);
+  }
+  return sessionId;
+};
+
 const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalProps) => {
   const [flag, setFlag] = useState("");
+  const [pseudo, setPseudo] = useState(() => localStorage.getItem('ctf_pseudo') || "");
   const [isChecking, setIsChecking] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const { toast } = useToast();
   const { user, session } = useAuth();
-  const navigate = useNavigate();
+
+  // Save pseudo to localStorage when it changes
+  useEffect(() => {
+    if (pseudo) {
+      localStorage.setItem('ctf_pseudo', pseudo);
+    }
+  }, [pseudo]);
 
   if (!challenge) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !session) {
+    if (!flag.trim()) return;
+
+    // For anonymous players, require a pseudo
+    if (!user && !pseudo.trim()) {
       toast({
-        title: "Connexion requise",
-        description: "Tu dois être connecté pour soumettre un flag",
+        title: "Pseudo requis",
+        description: "Entre un pseudo pour participer",
         variant: "destructive",
       });
-      navigate("/auth");
       return;
     }
 
-    if (!flag.trim()) return;
+    if (!user && (pseudo.length < 2 || pseudo.length > 30)) {
+      toast({
+        title: "Pseudo invalide",
+        description: "Le pseudo doit faire entre 2 et 30 caractères",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsChecking(true);
 
     try {
+      const requestBody: any = {
+        challengeId: challenge.id,
+        submittedFlag: flag.trim(),
+      };
+
+      // Add anonymous player data if not logged in
+      if (!user) {
+        requestBody.sessionId = getSessionId();
+        requestBody.pseudo = pseudo.trim();
+      }
+
       const { data, error } = await supabase.functions.invoke("verify-flag", {
-        body: {
-          challengeId: challenge.id,
-          submittedFlag: flag.trim(),
-        },
+        body: requestBody,
       });
 
       if (error) {
@@ -167,6 +200,21 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Pseudo field for anonymous players */}
+              {!user && (
+                <div className="relative">
+                  <Input
+                    value={pseudo}
+                    onChange={(e) => setPseudo(e.target.value)}
+                    placeholder="Ton pseudo"
+                    className="font-mono bg-background border-border pr-10 focus:border-primary focus:ring-primary"
+                    disabled={isChecking}
+                    maxLength={30}
+                  />
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+
               <div className="relative">
                 <Input
                   value={flag}
@@ -179,22 +227,15 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
               </div>
               
               {!user && (
-                <p className="text-sm text-muted-foreground text-center">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/auth")}
-                    className="text-primary hover:underline"
-                  >
-                    Connecte-toi
-                  </button>
-                  {" "}pour soumettre un flag
+                <p className="text-xs text-muted-foreground text-center">
+                  Tu joues en tant qu'invité. Ton pseudo apparaîtra sur le leaderboard.
                 </p>
               )}
               
               <Button
                 type="submit"
                 className="w-full font-mono gap-2"
-                disabled={!flag.trim() || isChecking || !user}
+                disabled={!flag.trim() || isChecking || (!user && !pseudo.trim())}
               >
                 {isChecking ? (
                   <>

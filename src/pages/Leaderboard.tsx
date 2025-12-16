@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trophy, Clock, Target, Loader2 } from "lucide-react";
+import { Trophy, Clock, Target, Loader2, User, UserCheck } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ interface LeaderboardEntry {
   score: number;
   solvedCount: number;
   lastSolve: string | null;
+  isAnonymous: boolean;
 }
 
 const Leaderboard = () => {
@@ -43,50 +44,85 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // Get all correct submissions with user info
+      // Get all correct submissions
       const { data: submissions, error } = await supabase
         .from("submissions")
         .select(`
           user_id,
+          player_id,
           submitted_at,
-          challenges!inner(points),
-          profiles!inner(username)
+          challenge_id
         `)
         .eq("is_correct", true)
         .order("submitted_at", { ascending: true });
 
       if (error) throw error;
 
-      // Aggregate by user
-      const userStats = new Map<string, {
+      // Get challenge points
+      const { data: challenges } = await supabase
+        .from("challenges")
+        .select("id, points");
+
+      const challengePoints = new Map(challenges?.map(c => [c.id, c.points]) || []);
+
+      // Get profiles for authenticated users
+      const userIds = [...new Set(submissions?.filter(s => s.user_id).map(s => s.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username")
+        .in("user_id", userIds.length > 0 ? userIds : ['00000000-0000-0000-0000-000000000000']);
+
+      const userProfiles = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
+
+      // Get players for anonymous users
+      const playerIds = [...new Set(submissions?.filter(s => s.player_id).map(s => s.player_id) || [])];
+      const { data: players } = await supabase
+        .from("players")
+        .select("id, pseudo")
+        .in("id", playerIds.length > 0 ? playerIds : ['00000000-0000-0000-0000-000000000000']);
+
+      const playerPseudos = new Map(players?.map(p => [p.id, p.pseudo]) || []);
+
+      // Aggregate by user/player
+      const stats = new Map<string, {
         username: string;
         score: number;
         solvedCount: number;
         lastSolve: string;
+        isAnonymous: boolean;
       }>();
 
-      submissions?.forEach((sub: any) => {
-        const userId = sub.user_id;
-        const existing = userStats.get(userId);
+      submissions?.forEach((sub) => {
+        const key = sub.user_id || sub.player_id;
+        if (!key) return;
+
+        const isAnonymous = !sub.user_id;
+        const username = isAnonymous 
+          ? (playerPseudos.get(sub.player_id!) || "Anonyme")
+          : (userProfiles.get(sub.user_id!) || "Inconnu");
+        
+        const points = challengePoints.get(sub.challenge_id) || 0;
+        const existing = stats.get(key);
         
         if (existing) {
-          existing.score += sub.challenges.points;
+          existing.score += points;
           existing.solvedCount += 1;
           if (sub.submitted_at > existing.lastSolve) {
             existing.lastSolve = sub.submitted_at;
           }
         } else {
-          userStats.set(userId, {
-            username: sub.profiles.username,
-            score: sub.challenges.points,
+          stats.set(key, {
+            username,
+            score: points,
             solvedCount: 1,
             lastSolve: sub.submitted_at,
+            isAnonymous,
           });
         }
       });
 
       // Convert to array and sort
-      const leaderboardData: LeaderboardEntry[] = Array.from(userStats.values())
+      const leaderboardData: LeaderboardEntry[] = Array.from(stats.values())
         .sort((a, b) => {
           if (b.score !== a.score) return b.score - a.score;
           // If same score, earlier last solve wins
@@ -181,13 +217,20 @@ const Leaderboard = () => {
                 
                 return (
                   <div
-                    key={player.username}
+                    key={`${player.username}-${index}`}
                     className={`${order} ${height} animate-fade-in`}
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     <div className={`p-6 rounded-xl border ${getRankStyle(player.rank)} backdrop-blur-sm text-center transition-all hover-glow`}>
                       <div className="text-4xl mb-3">{getRankIcon(player.rank)}</div>
-                      <h3 className="font-mono text-xl font-bold mb-1">{player.username}</h3>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <h3 className="font-mono text-xl font-bold">{player.username}</h3>
+                        {player.isAnonymous ? (
+                          <User className="h-4 w-4 text-muted-foreground" aria-label="Invité" />
+                        ) : (
+                          <UserCheck className="h-4 w-4 text-primary" aria-label="Membre" />
+                        )}
+                      </div>
                       <div className="font-mono text-3xl font-bold text-primary glow-text mb-2">
                         {player.score}
                         <span className="text-sm text-muted-foreground ml-1">pts</span>
@@ -219,7 +262,7 @@ const Leaderboard = () => {
                 <TableBody>
                   {leaderboard.map((player) => (
                     <TableRow
-                      key={player.username}
+                      key={`${player.username}-${player.rank}`}
                       className={`border-border transition-colors ${
                         player.rank <= 3 ? "bg-primary/5" : ""
                       }`}
@@ -233,7 +276,14 @@ const Leaderboard = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono font-medium">
-                        {player.username}
+                        <div className="flex items-center gap-2">
+                          {player.username}
+                          {player.isAnonymous ? (
+                            <User className="h-3 w-3 text-muted-foreground" aria-label="Invité" />
+                          ) : (
+                            <UserCheck className="h-3 w-3 text-primary" aria-label="Membre" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="font-mono font-bold text-primary">

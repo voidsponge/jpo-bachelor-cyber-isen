@@ -35,8 +35,9 @@ interface Submission {
   submitted_flag: string;
   is_correct: boolean;
   submitted_at: string;
-  profiles: { username: string } | null;
-  challenges: { title: string } | null;
+  username: string;
+  challenge_title: string;
+  is_anonymous: boolean;
 }
 
 const Admin = () => {
@@ -91,22 +92,53 @@ const Admin = () => {
       if (challengesError) throw challengesError;
       setChallenges(challengesData || []);
 
-      // Fetch recent submissions
+      // Fetch recent submissions with separate queries for related data
       const { data: submissionsData, error: submissionsError } = await supabase
         .from("submissions")
-        .select(`
-          id,
-          submitted_flag,
-          is_correct,
-          submitted_at,
-          profiles!submissions_user_id_fkey(username),
-          challenges!submissions_challenge_id_fkey(title)
-        `)
+        .select("id, submitted_flag, is_correct, submitted_at, user_id, player_id, challenge_id")
         .order("submitted_at", { ascending: false })
         .limit(50);
 
       if (submissionsError) throw submissionsError;
-      setSubmissions(submissionsData as unknown as Submission[] || []);
+
+      // Get profiles and players for usernames
+      const userIds = [...new Set(submissionsData?.filter(s => s.user_id).map(s => s.user_id) || [])];
+      const playerIds = [...new Set(submissionsData?.filter(s => s.player_id).map(s => s.player_id) || [])];
+      const challengeIds = [...new Set(submissionsData?.map(s => s.challenge_id) || [])];
+
+      const [profilesRes, playersRes, challengesRes] = await Promise.all([
+        userIds.length > 0 
+          ? supabase.from("profiles").select("user_id, username").in("user_id", userIds)
+          : { data: [] },
+        playerIds.length > 0
+          ? supabase.from("players").select("id, pseudo").in("id", playerIds)
+          : { data: [] },
+        challengeIds.length > 0
+          ? supabase.from("challenges").select("id, title").in("id", challengeIds)
+          : { data: [] }
+      ]);
+
+      const profileMap = new Map<string, string>(
+        (profilesRes.data || []).map(p => [p.user_id, p.username] as [string, string])
+      );
+      const playerMap = new Map<string, string>(
+        (playersRes.data || []).map(p => [p.id, p.pseudo] as [string, string])
+      );
+      const challengeMap = new Map<string, string>(
+        (challengesRes.data || []).map(c => [c.id, c.title] as [string, string])
+      );
+
+      const formattedSubmissions: Submission[] = (submissionsData || []).map(sub => ({
+        id: sub.id,
+        submitted_flag: sub.submitted_flag,
+        is_correct: sub.is_correct,
+        submitted_at: sub.submitted_at,
+        username: sub.user_id ? (profileMap.get(sub.user_id) || "Inconnu") : (playerMap.get(sub.player_id!) || "Anonyme"),
+        challenge_title: challengeMap.get(sub.challenge_id) || "Inconnu",
+        is_anonymous: !sub.user_id
+      }));
+
+      setSubmissions(formattedSubmissions);
 
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -472,9 +504,14 @@ const Admin = () => {
                   {submissions.map((sub) => (
                     <TableRow key={sub.id}>
                       <TableCell className="font-mono">
-                        {sub.profiles?.username || "Inconnu"}
+                        <div className="flex items-center gap-2">
+                          {sub.username}
+                          {sub.is_anonymous && (
+                            <Badge variant="outline" className="text-xs">Invité</Badge>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell>{sub.challenges?.title || "Inconnu"}</TableCell>
+                      <TableCell>{sub.challenge_title}</TableCell>
                       <TableCell className="font-mono text-xs max-w-[150px] truncate">
                         {sub.submitted_flag}
                       </TableCell>

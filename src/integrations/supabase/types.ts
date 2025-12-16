@@ -56,6 +56,27 @@ export type Database = {
         }
         Relationships: []
       }
+      players: {
+        Row: {
+          created_at: string
+          id: string
+          pseudo: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pseudo: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pseudo?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -88,25 +109,28 @@ export type Database = {
           challenge_id: string
           id: string
           is_correct: boolean
+          player_id: string | null
           submitted_at: string
           submitted_flag: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           challenge_id: string
           id?: string
           is_correct?: boolean
+          player_id?: string | null
           submitted_at?: string
           submitted_flag: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           challenge_id?: string
           id?: string
           is_correct?: boolean
+          player_id?: string | null
           submitted_at?: string
           submitted_flag?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -114,6 +138,13 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
@@ -144,6 +175,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_player_score: { Args: { _player_id: string }; Returns: number }
       get_user_score: { Args: { _user_id: string }; Returns: number }
       has_role: {
         Args: {

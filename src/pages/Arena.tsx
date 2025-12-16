@@ -17,6 +17,11 @@ interface Challenge {
   solved: boolean;
 }
 
+// Get session ID for anonymous players
+const getSessionId = () => {
+  return localStorage.getItem('ctf_session_id');
+};
+
 const Arena = () => {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -41,7 +46,7 @@ const Arena = () => {
 
       if (challengesError) throw challengesError;
 
-      // If user is logged in, fetch their solved challenges
+      // Fetch solved challenges for authenticated users
       let userSolvedIds = new Set<string>();
       if (user) {
         const { data: submissions, error: submissionsError } = await supabase
@@ -52,6 +57,29 @@ const Arena = () => {
 
         if (!submissionsError && submissions) {
           userSolvedIds = new Set(submissions.map((s) => s.challenge_id));
+        }
+      } else {
+        // Check for anonymous player's solved challenges
+        const sessionId = getSessionId();
+        if (sessionId) {
+          // First get player_id from session
+          const { data: player } = await supabase
+            .from("players")
+            .select("id")
+            .eq("session_id", sessionId)
+            .maybeSingle();
+
+          if (player) {
+            const { data: submissions } = await supabase
+              .from("submissions")
+              .select("challenge_id")
+              .eq("player_id", player.id)
+              .eq("is_correct", true);
+
+            if (submissions) {
+              userSolvedIds = new Set(submissions.map((s) => s.challenge_id));
+            }
+          }
         }
       }
 

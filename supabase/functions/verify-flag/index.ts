@@ -17,32 +17,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create Supabase client with user's token
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Verify the user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const { challengeId, submittedFlag } = await req.json();
+    const { challengeId, submittedFlag, sessionId, pseudo } = await req.json();
 
     if (!challengeId || !submittedFlag) {
       return new Response(
@@ -59,7 +36,76 @@ serve(async (req) => {
       );
     }
 
-    console.log(`User ${user.id} submitting flag for challenge ${challengeId}`);
+    // Check if authenticated user or anonymous player
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    let playerId: string | null = null;
+
+    if (authHeader) {
+      // Try to authenticate
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+      if (!authError && user) {
+        userId = user.id;
+      }
+    }
+
+    // If not authenticated, handle anonymous player
+    if (!userId) {
+      if (!sessionId || !pseudo) {
+        return new Response(
+          JSON.stringify({ error: 'Session ID et pseudo requis pour les joueurs anonymes' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate pseudo
+      if (typeof pseudo !== 'string' || pseudo.length < 2 || pseudo.length > 30) {
+        return new Response(
+          JSON.stringify({ error: 'Pseudo invalide (2-30 caractères)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get or create player
+      const { data: existingPlayer } = await supabaseClient
+        .from('players')
+        .select('id, pseudo')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (existingPlayer) {
+        playerId = existingPlayer.id;
+        // Update pseudo if changed
+        if (existingPlayer.pseudo !== pseudo) {
+          await supabaseClient
+            .from('players')
+            .update({ pseudo })
+            .eq('id', existingPlayer.id);
+        }
+      } else {
+        // Create new player
+        const { data: newPlayer, error: createError } = await supabaseClient
+          .from('players')
+          .insert({ session_id: sessionId, pseudo })
+          .select('id')
+          .single();
+
+        if (createError) {
+          console.error('Error creating player:', createError);
+          return new Response(
+            JSON.stringify({ error: 'Erreur lors de la création du joueur' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        playerId = newPlayer.id;
+      }
+    }
+
+    const identifier = userId || playerId;
+    const identifierType = userId ? 'user' : 'player';
+    console.log(`${identifierType} ${identifier} submitting flag for challenge ${challengeId}`);
 
     // Get the challenge's correct flag (server-side only!)
     const { data: challenge, error: challengeError } = await supabaseClient
@@ -84,13 +130,19 @@ serve(async (req) => {
     }
 
     // Check if already solved
-    const { data: existingSubmission } = await supabaseClient
+    let existingQuery = supabaseClient
       .from('submissions')
       .select('id')
-      .eq('user_id', user.id)
       .eq('challenge_id', challengeId)
-      .eq('is_correct', true)
-      .maybeSingle();
+      .eq('is_correct', true);
+
+    if (userId) {
+      existingQuery = existingQuery.eq('user_id', userId);
+    } else {
+      existingQuery = existingQuery.eq('player_id', playerId);
+    }
+
+    const { data: existingSubmission } = await existingQuery.maybeSingle();
 
     if (existingSubmission) {
       return new Response(
@@ -107,18 +159,24 @@ serve(async (req) => {
     const isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
 
     // Record the submission
+    const submissionData: any = {
+      challenge_id: challengeId,
+      submitted_flag: submittedFlag.substring(0, 200),
+      is_correct: isCorrect
+    };
+
+    if (userId) {
+      submissionData.user_id = userId;
+    } else {
+      submissionData.player_id = playerId;
+    }
+
     const { error: submissionError } = await supabaseClient
       .from('submissions')
-      .insert({
-        user_id: user.id,
-        challenge_id: challengeId,
-        submitted_flag: submittedFlag.substring(0, 200), // Limit stored length
-        is_correct: isCorrect
-      });
+      .insert(submissionData);
 
     if (submissionError) {
       console.error('Submission error:', submissionError);
-      // If it's a unique constraint error, the user already has a correct submission
       if (submissionError.code === '23505') {
         return new Response(
           JSON.stringify({ 
@@ -132,18 +190,19 @@ serve(async (req) => {
     }
 
     if (isCorrect) {
-      console.log(`User ${user.id} solved challenge ${challengeId} - ${challenge.title}`);
+      console.log(`${identifierType} ${identifier} solved challenge ${challengeId} - ${challenge.title}`);
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: `🎉 Bravo ! +${challenge.points} points`,
           points: challenge.points,
-          challengeTitle: challenge.title
+          challengeTitle: challenge.title,
+          playerId: playerId
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      console.log(`User ${user.id} failed attempt on challenge ${challengeId}`);
+      console.log(`${identifierType} ${identifier} failed attempt on challenge ${challengeId}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
