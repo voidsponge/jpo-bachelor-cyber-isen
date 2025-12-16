@@ -3,6 +3,7 @@ import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
+import TrollOverlay from "@/components/TrollOverlay";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -232,6 +233,8 @@ const Arena = () => {
         onClose={() => setIsModalOpen(false)}
         onSolve={handleSolve}
       />
+
+      <TrollOverlay />
     </div>
   );
 };

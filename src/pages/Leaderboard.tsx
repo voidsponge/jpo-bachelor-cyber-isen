@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trophy, Clock, Target, Loader2, User, UserCheck } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import TrollOverlay from "@/components/TrollOverlay";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -315,6 +316,8 @@ const Leaderboard = () => {
           <span className="font-mono">Mise à jour en temps réel</span>
         </div>
       </main>
+
+      <TrollOverlay />
     </div>
   );
 };

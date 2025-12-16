@@ -14,9 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import TrollModePanel from "@/components/TrollModePanel";
 
 type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
 
@@ -54,7 +55,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
-  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats">("challenges");
+  const [activeTab, setActiveTab] = useState<"challenges" | "submissions" | "stats" | "troll">("challenges");
   const [isResetting, setIsResetting] = useState(false);
   const [stats, setStats] = useState({ totalSubmissions: 0, totalPlayers: 0, correctSubmissions: 0 });
   const [chartData, setChartData] = useState<{ categoryStats: any[]; solvesByChallenge: any[] }>({ categoryStats: [], solvesByChallenge: [] });
@@ -534,6 +535,14 @@ const Admin = () => {
             <BarChart3 className="h-4 w-4" />
             Statistiques
           </Button>
+          <Button
+            variant={activeTab === "troll" ? "default" : "outline"}
+            onClick={() => setActiveTab("troll")}
+            className="gap-2"
+          >
+            <Ghost className="h-4 w-4" />
+            Troll Mode 😈
+          </Button>
           <div className="flex-1" />
           <Button variant="outline" className="gap-2" onClick={() => window.open("/spectator", "_blank")}>
             <Monitor className="h-4 w-4" />
@@ -544,6 +553,11 @@ const Admin = () => {
             Export CSV
           </Button>
         </div>
+
+        {/* Troll Mode Tab */}
+        {activeTab === "troll" && (
+          <TrollModePanel />
+        )}
 
         {/* Challenges Tab */}
         {activeTab === "challenges" && (

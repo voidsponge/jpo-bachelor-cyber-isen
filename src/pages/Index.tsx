@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import MatrixRain from "@/components/MatrixRain";
 import Navbar from "@/components/Navbar";
+import TrollOverlay from "@/components/TrollOverlay";
 
 const Index = () => {
   return (
@@ -314,6 +315,8 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <TrollOverlay />
     </div>
   );
 };
