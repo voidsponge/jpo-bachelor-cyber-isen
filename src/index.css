@@ -169,11 +169,15 @@
 
   @keyframes scan-line {
     0% {
-      top: 0;
+      top: -10%;
     }
     100% {
-      top: 100%;
+      top: 110%;
     }
+  }
+
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
   }
 
   .animate-matrix {
