@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
 import TrollOverlay from "@/components/TrollOverlay";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,9 +20,93 @@ interface Challenge {
   externalUrl?: string | null;
 }
 
-// Get session ID for anonymous players
-const getSessionId = () => {
-  return sessionStorage.getItem('ctf_session_id');
+// Category-based gradient backgrounds for the cards
+const categoryGradients = {
+  Web: "from-blue-600 via-blue-800 to-slate-900",
+  OSINT: "from-amber-500 via-orange-700 to-slate-900",
+  Crypto: "from-purple-600 via-violet-800 to-slate-900",
+  Stegano: "from-pink-500 via-rose-700 to-slate-900",
+  Logic: "from-orange-500 via-red-700 to-slate-900",
+  Forensics: "from-cyan-500 via-teal-700 to-slate-900",
+};
+
+// Category icons as SVG patterns
+const categoryPatterns = {
+  Web: "🌐",
+  OSINT: "🔍",
+  Crypto: "🔐",
+  Stegano: "🖼️",
+  Logic: "⚙️",
+  Forensics: "🔬",
+};
+
+const ChampionCard = ({ 
+  challenge, 
+  onClick 
+}: { 
+  challenge: Challenge; 
+  onClick: () => void;
+}) => {
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative cursor-pointer overflow-hidden rounded-lg transition-all duration-300 hover:scale-105 hover:z-10 ${
+        challenge.solved ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+      }`}
+    >
+      {/* Card Image Area */}
+      <div className={`aspect-[3/4] bg-gradient-to-b ${categoryGradients[challenge.category]} relative overflow-hidden`}>
+        {/* Category Icon Pattern */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-20 text-8xl">
+          {categoryPatterns[challenge.category]}
+        </div>
+        
+        {/* Animated glow effect on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Points badge */}
+        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono font-bold text-primary">
+          {challenge.points} pts
+        </div>
+        
+        {/* Difficulty skulls */}
+        <div className="absolute top-2 left-2 flex gap-0.5">
+          {Array.from({ length: 3 }, (_, i) => (
+            <span
+              key={i}
+              className={`text-xs ${i < challenge.difficulty ? "text-red-500" : "text-muted-foreground/30"}`}
+            >
+              💀
+            </span>
+          ))}
+        </div>
+
+        {/* Solved indicator */}
+        {challenge.solved && (
+          <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+            <CheckCircle2 className="h-16 w-16 text-primary drop-shadow-lg" />
+          </div>
+        )}
+
+        {/* Hover overlay with description */}
+        <div className="absolute inset-x-0 bottom-12 top-1/2 flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <p className="text-xs text-foreground/80 line-clamp-3">
+            {challenge.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Title Bar */}
+      <div className="bg-slate-800/95 backdrop-blur-sm px-3 py-2.5 border-t border-slate-700">
+        <h3 className="font-mono font-bold text-sm text-foreground uppercase tracking-wide truncate">
+          {challenge.title}
+        </h3>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+          {challenge.category}
+        </span>
+      </div>
+    </div>
+  );
 };
 
 const Arena = () => {
@@ -33,7 +116,7 @@ const Arena = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
-  const [playerId, setPlayerId] = useState<string | undefined>();
+  const [filter, setFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchChallenges();
@@ -42,7 +125,6 @@ const Arena = () => {
   const fetchChallenges = async () => {
     setIsLoading(true);
     try {
-      // Fetch active challenges from the public view (excludes flag column)
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges_public")
         .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url")
@@ -51,7 +133,6 @@ const Arena = () => {
 
       if (challengesError) throw challengesError;
 
-      // Fetch solved challenges for authenticated users from public view
       let userSolvedIds = new Set<string>();
       if (user) {
         const { data: submissions, error: submissionsError } = await supabase
@@ -64,10 +145,8 @@ const Arena = () => {
           userSolvedIds = new Set(submissions.map((s) => s.challenge_id));
         }
       } else {
-        // Check for anonymous player's solved challenges
         const currentSessionId = sessionStorage.getItem('ctf_session_id');
         if (currentSessionId) {
-          // First get player_id from session
           const { data: player } = await supabase
             .from("players")
             .select("id")
@@ -75,7 +154,6 @@ const Arena = () => {
             .maybeSingle();
 
           if (player) {
-            setPlayerId(player.id);
             const { data: submissions } = await supabase
               .from("submissions_public")
               .select("challenge_id")
@@ -108,10 +186,6 @@ const Arena = () => {
     }
   };
 
-  const totalPoints = challenges.reduce((acc, c) => acc + c.points, 0);
-  const earnedPoints = challenges.filter((c) => c.solved).reduce((acc, c) => acc + c.points, 0);
-  const solvedCount = challenges.filter((c) => c.solved).length;
-
   const handleChallengeClick = (challenge: Challenge) => {
     setSelectedChallenge(challenge);
     setIsModalOpen(true);
@@ -125,6 +199,11 @@ const Arena = () => {
       )
     );
   };
+
+  const categories = ["all", "Web", "OSINT", "Crypto", "Stegano", "Logic", "Forensics"];
+  const filteredChallenges = filter === "all" 
+    ? challenges 
+    : challenges.filter(c => c.category === filter);
 
   if (isLoading) {
     return (
@@ -143,85 +222,46 @@ const Arena = () => {
 
       <main className="container px-4 pt-24 pb-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="text-center mb-8">
           <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
-            <span className="text-primary">CTF</span> Arena
+            <span className="text-primary glow-text">SÉLECTION</span> DES CHALLENGES
           </h1>
           <p className="text-muted-foreground">
-            Résous les challenges pour gagner des points et grimper au classement
+            Choisissez votre prochain défi. Maîtrisez-en un, ou maîtrisez-les tous.
           </p>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="p-4 rounded-xl border border-border bg-card/50 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Trophy className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="font-mono text-2xl font-bold text-primary glow-text">
-                {earnedPoints}
-                <span className="text-sm text-muted-foreground font-normal">
-                  /{totalPoints}
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">Points</div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl border border-border bg-card/50 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Terminal className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="font-mono text-2xl font-bold text-foreground">
-                {solvedCount}
-                <span className="text-sm text-muted-foreground font-normal">
-                  /{challenges.length}
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">Résolus</div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl border border-border bg-card/50 flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Zap className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="font-mono text-2xl font-bold text-foreground">
-                {totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0}%
-              </div>
-              <div className="text-sm text-muted-foreground">Progression</div>
-            </div>
-          </div>
+        {/* Category Filter */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={`px-4 py-2 rounded-lg font-mono text-sm uppercase tracking-wide transition-all duration-200 ${
+                filter === cat
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              {cat === "all" ? "Tous" : cat}
+            </button>
+          ))}
         </div>
 
-        {/* Progress bar */}
-        <div className="mb-8">
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-500 rounded-full"
-              style={{ width: `${totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Challenges Grid */}
-        {challenges.length === 0 ? (
+        {/* Champion Grid */}
+        {filteredChallenges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <Terminal className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Aucun challenge disponible pour le moment</p>
+            <p>Aucun challenge disponible</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {challenges.map((challenge, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {filteredChallenges.map((challenge, index) => (
               <div
                 key={challenge.id}
                 className="animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <ChallengeCard
+                <ChampionCard
                   challenge={challenge}
                   onClick={() => handleChallengeClick(challenge)}
                 />
