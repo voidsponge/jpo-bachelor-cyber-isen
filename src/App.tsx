@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Arena from "./pages/Arena";
+import MapArena from "./pages/MapArena";
 import Leaderboard from "./pages/Leaderboard";
 import Spectator from "./pages/Spectator";
 import Admin from "./pages/Admin";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/arena" element={<Arena />} />
+            <Route path="/map" element={<MapArena />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/spectator" element={<Spectator />} />
             <Route path="/admin" element={<Admin />} />
