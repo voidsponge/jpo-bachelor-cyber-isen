@@ -41,13 +41,19 @@ serve(async (req) => {
     let userId: string | null = null;
     let playerId: string | null = null;
 
-    if (authHeader) {
-      // Try to authenticate
-      const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-      if (!authError && user) {
-        userId = user.id;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      // Try to authenticate using the JWT token
+      try {
+        const { data, error: authError } = await supabaseClient.auth.getUser(token);
+        if (authError) {
+          console.log('Auth error:', authError.message);
+        } else if (data?.user) {
+          userId = data.user.id;
+          console.log('Authenticated user:', userId);
+        }
+      } catch (e) {
+        console.error('Auth exception:', e);
       }
     }
 
