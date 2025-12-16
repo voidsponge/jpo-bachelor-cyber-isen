@@ -33,6 +33,7 @@ interface Challenge {
   created_at: string;
   difficulty: number;
   is_terminal_challenge: boolean;
+  external_url: string | null;
 }
 
 interface Submission {
@@ -71,6 +72,7 @@ const Admin = () => {
     is_active: true,
     difficulty: 1,
     is_terminal_challenge: false,
+    external_url: "",
   });
 
   useEffect(() => {
@@ -303,6 +305,7 @@ const Admin = () => {
       is_active: challenge.is_active,
       difficulty: challenge.difficulty || 1,
       is_terminal_challenge: challenge.is_terminal_challenge || false,
+      external_url: challenge.external_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -319,6 +322,7 @@ const Admin = () => {
       is_active: true,
       difficulty: 1,
       is_terminal_challenge: false,
+      external_url: "",
     });
   };
 
@@ -640,6 +644,18 @@ const Admin = () => {
                         onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
                         className="bg-background"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>URL Externe (Docker/VM)</Label>
+                      <Input
+                        value={formData.external_url}
+                        onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                        placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
+                        className="bg-background font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Lien vers un container Docker ou une VM hébergeant le challenge
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label>Flag (réponse)</Label>

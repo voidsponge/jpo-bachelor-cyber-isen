@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull } from "lucide-react";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
 import LinuxTerminal from "./LinuxTerminal";
 
@@ -21,6 +21,7 @@ interface Challenge {
   solved?: boolean;
   difficulty?: number;
   isTerminalChallenge?: boolean;
+  externalUrl?: string | null;
 }
 
 // Confetti celebration function
@@ -283,6 +284,15 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                 </Button>
               )}
             </div>
+          )}
+
+          {challenge.externalUrl && (
+            <Button variant="outline" className="w-full gap-2 font-mono border-primary/50 hover:bg-primary/10" asChild>
+              <a href={challenge.externalUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 text-primary" />
+                Accéder au challenge (VM/Docker)
+              </a>
+            </Button>
           )}
 
           {challenge.file_url && (
