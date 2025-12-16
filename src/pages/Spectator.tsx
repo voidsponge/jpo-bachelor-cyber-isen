@@ -71,12 +71,12 @@ const Spectator = () => {
 
   const addNotification = async (submission: any) => {
     try {
-      // Get challenge info
+      // Get challenge info from public view
       const { data: challenge } = await supabase
-        .from("challenges")
+        .from("challenges_public")
         .select("title, points")
         .eq("id", submission.challenge_id)
-        .single();
+        .single() as { data: { title: string; points: number } | null };
 
       // Get username
       let username = "Anonyme";
@@ -119,8 +119,8 @@ const Spectator = () => {
         .order("submitted_at", { ascending: true });
 
       const { data: challenges } = await supabase
-        .from("challenges")
-        .select("id, points");
+        .from("challenges_public")
+        .select("id, points") as { data: { id: string; points: number }[] | null };
 
       const challengePoints = new Map(challenges?.map(c => [c.id, c.points]) || []);
 
