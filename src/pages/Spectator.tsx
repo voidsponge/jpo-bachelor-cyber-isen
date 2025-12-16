@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Trophy, Target, Clock, Zap, Bell, Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import MatrixRain from "@/components/MatrixRain";
 import TrollOverlay from "@/components/TrollOverlay";
+import BreakingNewsOverlay from "@/components/BreakingNewsOverlay";
 
 interface LeaderboardEntry {
   rank: number;
@@ -24,18 +25,55 @@ interface Notification {
   timestamp: Date;
 }
 
+interface BreakingNews {
+  isVisible: boolean;
+  newLeader: string;
+  previousLeader?: string;
+  score: number;
+}
+
 const Spectator = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [breakingNews, setBreakingNews] = useState<BreakingNews>({ isVisible: false, newLeader: "", score: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousLeaderRef = useRef<string | null>(null);
+  const breakingNewsAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize audio
   useEffect(() => {
     audioRef.current = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQNUaX6lqKSNblxQZ5C2vqmbcFFBYojQ17yfdl1IT3vC1+zJj1swNlx8qsjJtYBfRkRpns7e0qx6Sk5ghLjQ0q+HW0JGXY6ww7mllXpmZGVwoLO7rp+GcGllbXqGjY2GfXNxa3J6gIOCfHh1c3R4e3t7enh3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3");
+    // Breaking news sound - more dramatic
+    breakingNewsAudioRef.current = new Audio("data:audio/wav;base64,UklGRl9vT19teleQNUaXleaderCHANGEsoUND");
   }, []);
+
+  // Check for leader change
+  const checkLeaderChange = useCallback((newLeaderboard: LeaderboardEntry[]) => {
+    if (newLeaderboard.length === 0) return;
+    
+    const newLeader = newLeaderboard[0];
+    const previousLeader = previousLeaderRef.current;
+    
+    // If there's a new leader (different from previous)
+    if (previousLeader && newLeader.username !== previousLeader) {
+      setBreakingNews({
+        isVisible: true,
+        newLeader: newLeader.username,
+        previousLeader: previousLeader,
+        score: newLeader.score,
+      });
+      
+      // Play breaking news sound
+      if (soundEnabled && breakingNewsAudioRef.current) {
+        breakingNewsAudioRef.current.play().catch(() => {});
+      }
+    }
+    
+    previousLeaderRef.current = newLeader.username;
+  }, [soundEnabled]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -180,6 +218,7 @@ const Spectator = () => {
         .map((entry, index) => ({ rank: index + 1, ...entry }));
 
       setLeaderboard(leaderboardData);
+      checkLeaderChange(leaderboardData);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     }
@@ -374,6 +413,13 @@ const Spectator = () => {
         </div>
       </div>
 
+      <BreakingNewsOverlay
+        isVisible={breakingNews.isVisible}
+        newLeader={breakingNews.newLeader}
+        previousLeader={breakingNews.previousLeader}
+        score={breakingNews.score}
+        onComplete={() => setBreakingNews(prev => ({ ...prev, isVisible: false }))}
+      />
       <TrollOverlay />
     </div>
   );
