@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Terminal, Trophy, Users, ChevronRight, Cpu, Lock, Code } from "lucide-react";
+import { Shield, Terminal, Trophy, ChevronRight, Lock, Code } from "lucide-react";
 import MatrixRain from "@/components/MatrixRain";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -37,10 +40,10 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <Link to="/arena">
+            <Link to={user ? "/arena" : "/auth"}>
               <Button size="lg" className="font-mono gap-2 text-lg px-8 hover-glow">
                 <Terminal className="h-5 w-5" />
-                Commencer le hack
+                {user ? "Accéder à l'Arena" : "Commencer le hack"}
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </Link>
@@ -134,7 +137,7 @@ const Index = () => {
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
-              {/* Hidden flag for Web challenge */}
+              {/* Hidden flag for Web challenge - DO NOT REMOVE */}
               {/* FLAG: ISEN{inspect_element_master} */}
               <span>Made with 💚 for JPO</span>
             </div>

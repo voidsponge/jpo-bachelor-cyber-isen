@@ -1,14 +1,75 @@
-import { useState } from "react";
-import { Trophy, Terminal, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import ChallengeCard, { Challenge } from "@/components/ChallengeCard";
+import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
-import { challenges as initialChallenges } from "@/data/challenges";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Challenge {
+  id: string;
+  title: string;
+  category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
+  points: number;
+  description: string;
+  hint: string | null;
+  file_url: string | null;
+  solved: boolean;
+}
 
 const Arena = () => {
-  const [challenges, setChallenges] = useState<Challenge[]>(initialChallenges);
+  const { user } = useAuth();
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchChallenges();
+  }, [user]);
+
+  const fetchChallenges = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch active challenges
+      const { data: challengesData, error: challengesError } = await supabase
+        .from("challenges")
+        .select("id, title, category, points, description, hint, file_url")
+        .eq("is_active", true)
+        .order("points", { ascending: true });
+
+      if (challengesError) throw challengesError;
+
+      // If user is logged in, fetch their solved challenges
+      let userSolvedIds = new Set<string>();
+      if (user) {
+        const { data: submissions, error: submissionsError } = await supabase
+          .from("submissions")
+          .select("challenge_id")
+          .eq("user_id", user.id)
+          .eq("is_correct", true);
+
+        if (!submissionsError && submissions) {
+          userSolvedIds = new Set(submissions.map((s) => s.challenge_id));
+        }
+      }
+
+      setSolvedIds(userSolvedIds);
+
+      const formattedChallenges: Challenge[] = (challengesData || []).map((c) => ({
+        ...c,
+        category: c.category as Challenge["category"],
+        solved: userSolvedIds.has(c.id),
+      }));
+
+      setChallenges(formattedChallenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const totalPoints = challenges.reduce((acc, c) => acc + c.points, 0);
   const earnedPoints = challenges.filter((c) => c.solved).reduce((acc, c) => acc + c.points, 0);
@@ -20,14 +81,24 @@ const Arena = () => {
   };
 
   const handleSolve = (challengeId: string) => {
+    setSolvedIds((prev) => new Set([...prev, challengeId]));
     setChallenges((prev) =>
       prev.map((c) =>
-        c.id === challengeId
-          ? { ...c, solved: true, firstBlood: c.firstBlood || "Toi !" }
-          : c
+        c.id === challengeId ? { ...c, solved: true } : c
       )
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +153,7 @@ const Arena = () => {
             </div>
             <div>
               <div className="font-mono text-2xl font-bold text-foreground">
-                {Math.round((earnedPoints / totalPoints) * 100)}%
+                {totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0}%
               </div>
               <div className="text-sm text-muted-foreground">Progression</div>
             </div>
@@ -94,26 +165,33 @@ const Arena = () => {
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-primary transition-all duration-500 rounded-full"
-              style={{ width: `${(earnedPoints / totalPoints) * 100}%` }}
+              style={{ width: `${totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0}%` }}
             />
           </div>
         </div>
 
         {/* Challenges Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {challenges.map((challenge, index) => (
-            <div
-              key={challenge.id}
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <ChallengeCard
-                challenge={challenge}
-                onClick={() => handleChallengeClick(challenge)}
-              />
-            </div>
-          ))}
-        </div>
+        {challenges.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Terminal className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Aucun challenge disponible pour le moment</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {challenges.map((challenge, index) => (
+              <div
+                key={challenge.id}
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <ChallengeCard
+                  challenge={challenge}
+                  onClick={() => handleChallengeClick(challenge)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       <ChallengeModal

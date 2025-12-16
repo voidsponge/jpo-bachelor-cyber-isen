@@ -4,8 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Challenge } from "./ChallengeCard";
-import { CheckCircle2, XCircle, Terminal, Download } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+interface Challenge {
+  id: string;
+  title: string;
+  category: string;
+  points: number;
+  description: string;
+  hint: string | null;
+  file_url: string | null;
+  solved?: boolean;
+}
 
 interface ChallengeModalProps {
   challenge: Challenge | null;
@@ -14,50 +27,77 @@ interface ChallengeModalProps {
   onSolve: (challengeId: string) => void;
 }
 
-// Mock flags for demo
-const mockFlags: Record<string, string> = {
-  "1": "ISEN{inspect_element_master}",
-  "2": "ISEN{osint_detective}",
-  "3": "ISEN{caesar_cipher_cracked}",
-  "4": "ISEN{hidden_in_plain_sight}",
-  "5": "ISEN{twelve_chars!}",
-  "6": "ISEN{packet_sniffer}",
-};
-
 const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalProps) => {
   const [flag, setFlag] = useState("");
   const [isChecking, setIsChecking] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const { toast } = useToast();
+  const { user, session } = useAuth();
+  const navigate = useNavigate();
 
   if (!challenge) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsChecking(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const correctFlag = mockFlags[challenge.id];
     
-    if (flag.trim().toLowerCase() === correctFlag.toLowerCase()) {
+    if (!user || !session) {
       toast({
-        title: "🎉 Flag correct !",
-        description: `+${challenge.points} points ! Tu as résolu "${challenge.title}"`,
-        className: "bg-primary/20 border-primary text-foreground",
-      });
-      onSolve(challenge.id);
-      setFlag("");
-      onClose();
-    } else {
-      toast({
-        title: "❌ Flag incorrect",
-        description: "Essaie encore, tu peux le faire !",
+        title: "Connexion requise",
+        description: "Tu dois être connecté pour soumettre un flag",
         variant: "destructive",
       });
+      navigate("/auth");
+      return;
     }
 
-    setIsChecking(false);
+    if (!flag.trim()) return;
+
+    setIsChecking(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-flag", {
+        body: {
+          challengeId: challenge.id,
+          submittedFlag: flag.trim(),
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.success) {
+        toast({
+          title: "🎉 Flag correct !",
+          description: data.message,
+          className: "bg-primary/20 border-primary text-foreground",
+        });
+        onSolve(challenge.id);
+        setFlag("");
+        setShowHint(false);
+        onClose();
+      } else if (data.alreadySolved) {
+        toast({
+          title: "Déjà résolu",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "❌ Flag incorrect",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting flag:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de vérifier le flag",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   return (
@@ -84,20 +124,39 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
         <div className="space-y-6 py-4">
           <div className="p-4 rounded-lg bg-secondary/50 border border-border">
-            <p className="text-foreground leading-relaxed">{challenge.description}</p>
+            <p className="text-foreground leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
           </div>
 
-          {/* Hint for demo */}
-          <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-            <p className="text-xs text-muted-foreground font-mono">
-              <span className="text-primary">// HINT (démo):</span> Le flag est au format ISEN{"{...}"}
-            </p>
-          </div>
+          {challenge.hint && (
+            <div>
+              {showHint ? (
+                <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                  <div className="flex items-center gap-2 text-yellow-500 text-sm font-mono mb-1">
+                    <Lightbulb className="h-4 w-4" />
+                    Indice
+                  </div>
+                  <p className="text-sm text-foreground">{challenge.hint}</p>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHint(true)}
+                  className="gap-2 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/10"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Voir l'indice
+                </Button>
+              )}
+            </div>
+          )}
 
-          {challenge.category === "Stegano" && (
-            <Button variant="outline" className="w-full gap-2 font-mono">
-              <Download className="h-4 w-4" />
-              Télécharger le fichier
+          {challenge.file_url && (
+            <Button variant="outline" className="w-full gap-2 font-mono" asChild>
+              <a href={challenge.file_url} download>
+                <Download className="h-4 w-4" />
+                Télécharger le fichier
+              </a>
             </Button>
           )}
 
@@ -118,14 +177,28 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                 />
                 <Terminal className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
+              
+              {!user && (
+                <p className="text-sm text-muted-foreground text-center">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/auth")}
+                    className="text-primary hover:underline"
+                  >
+                    Connecte-toi
+                  </button>
+                  {" "}pour soumettre un flag
+                </p>
+              )}
+              
               <Button
                 type="submit"
                 className="w-full font-mono gap-2"
-                disabled={!flag.trim() || isChecking}
+                disabled={!flag.trim() || isChecking || !user}
               >
                 {isChecking ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Vérification...
                   </>
                 ) : (

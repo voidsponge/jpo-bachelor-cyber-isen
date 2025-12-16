@@ -1,8 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { Terminal, Trophy, Shield, Home } from "lucide-react";
+import { Terminal, Trophy, Shield, Home, LogIn, LogOut, Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const location = useLocation();
+  const { user, username, isAdmin, signOut } = useAuth();
 
   const links = [
     { to: "/", label: "Accueil", icon: Home },
@@ -40,6 +50,48 @@ const Navbar = () => {
                 </Link>
               );
             })}
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="ml-2 font-mono gap-2">
+                    <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
+                      {username?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <span className="hidden sm:inline">{username || "User"}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    Connecté en tant que<br />
+                    <span className="font-mono text-foreground">{username}</span>
+                  </div>
+                  <DropdownMenuSeparator />
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                          <Settings className="h-4 w-4" />
+                          Panel Admin
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" className="ml-2 font-mono gap-2">
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline">Connexion</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
