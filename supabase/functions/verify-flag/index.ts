@@ -116,7 +116,7 @@ serve(async (req) => {
     // Get the challenge's correct flag (server-side only!)
     const { data: challenge, error: challengeError } = await supabaseClient
       .from('challenges')
-      .select('id, flag, points, title, is_active, is_terminal_challenge')
+      .select('id, flag, points, title, is_active, is_terminal_challenge, external_url')
       .eq('id', challengeId)
       .single();
 
@@ -166,12 +166,49 @@ serve(async (req) => {
     }
 
     // Compare flags
-    // For terminal challenges, accept any valid dynamic flag format
-    // For regular challenges, compare against the database flag
     let isCorrect = false;
-    if (isTerminalChallenge && terminalFlagPattern.test(submittedFlag.trim())) {
+    
+    // If challenge has external_url, verify via external API
+    if (challenge.external_url) {
+      try {
+        const apiUrl = challenge.external_url.endsWith('/') 
+          ? `${challenge.external_url}api/verify` 
+          : `${challenge.external_url}/api/verify`;
+        
+        console.log(`Calling external API: ${apiUrl}`);
+        
+        const externalResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flag: submittedFlag.trim() })
+        });
+        
+        if (!externalResponse.ok) {
+          console.error(`External API error: ${externalResponse.status}`);
+          return new Response(
+            JSON.stringify({ error: 'Erreur de vérification externe' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const externalResult = await externalResponse.json();
+        isCorrect = externalResult.valid === true;
+        console.log(`External API response: valid=${isCorrect}`);
+        
+      } catch (apiError) {
+        console.error('External API call failed:', apiError);
+        return new Response(
+          JSON.stringify({ error: 'Service externe indisponible' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    // For terminal challenges, accept any valid dynamic flag format
+    else if (isTerminalChallenge && terminalFlagPattern.test(submittedFlag.trim())) {
       isCorrect = true;
-    } else {
+    }
+    // For regular challenges, compare against the database flag
+    else {
       isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
     }
 
