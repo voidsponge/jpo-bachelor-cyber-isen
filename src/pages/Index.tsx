@@ -15,8 +15,25 @@ import {
 import MatrixRain from "@/components/MatrixRain";
 import Navbar from "@/components/Navbar";
 import TrollOverlay from "@/components/TrollOverlay";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const { data: challenges = [] } = useQuery({
+    queryKey: ["challenges-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("challenges_public")
+        .select("points")
+        .eq("is_active", true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const totalChallenges = challenges.length;
+  const totalPoints = challenges.reduce((sum, c) => sum + (c.points || 0), 0);
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
@@ -117,11 +134,11 @@ const Index = () => {
               style={{ animationDelay: "0.4s" }}
             >
               <div className="text-center p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/20">
-                <div className="font-mono text-3xl font-bold text-primary glow-text">6</div>
+                <div className="font-mono text-3xl font-bold text-primary glow-text">{totalChallenges}</div>
                 <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Challenges</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/20">
-                <div className="font-mono text-3xl font-bold text-primary glow-text">1500</div>
+                <div className="font-mono text-3xl font-bold text-primary glow-text">{totalPoints}</div>
                 <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Points</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/20">
