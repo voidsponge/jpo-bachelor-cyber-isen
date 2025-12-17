@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink } from "lucide-react";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink, Container } from "lucide-react";
 import confetti from "canvas-confetti";
 import LinuxTerminal from "./LinuxTerminal";
+import DockerTerminal from "./DockerTerminal";
 
 interface Challenge {
   id: string;
@@ -22,6 +23,8 @@ interface Challenge {
   difficulty?: number;
   isTerminalChallenge?: boolean;
   externalUrl?: string | null;
+  dockerImage?: string | null;
+  dockerPorts?: string | null;
 }
 
 // Confetti celebration function
@@ -208,7 +211,7 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`bg-card border-border ${challenge.isTerminalChallenge ? 'sm:max-w-2xl' : 'sm:max-w-lg'}`}>
+      <DialogContent className={`bg-card border-border ${(challenge.isTerminalChallenge || challenge.dockerImage) ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
@@ -259,6 +262,22 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                   ✓ Flag trouvé et copié dans le champ ci-dessous !
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Docker Terminal for docker challenges */}
+          {challenge.dockerImage && !challenge.solved && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground font-mono flex items-center gap-2">
+                <Container className="h-4 w-4" />
+                Container Docker interactif
+              </p>
+              <DockerTerminal
+                dockerImage={challenge.dockerImage}
+                dockerPorts={challenge.dockerPorts || undefined}
+                sessionId={getSessionId()}
+                challengeId={challenge.id}
+              />
             </div>
           )}
 

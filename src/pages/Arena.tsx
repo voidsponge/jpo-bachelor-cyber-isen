@@ -20,6 +20,8 @@ interface Challenge {
   difficulty: number;
   isTerminalChallenge?: boolean;
   externalUrl?: string | null;
+  dockerImage?: string | null;
+  dockerPorts?: string | null;
 }
 
 // Get session ID for anonymous players
@@ -46,7 +48,7 @@ const Arena = () => {
       // Fetch active challenges from the public view (excludes flag column)
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges_public")
-        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url")
+        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url, docker_image, docker_ports")
         .eq("is_active", true)
         .order("points", { ascending: true }) as { data: any[] | null; error: any };
 
@@ -99,6 +101,8 @@ const Arena = () => {
         difficulty: c.difficulty || 1,
         isTerminalChallenge: c.is_terminal_challenge || false,
         externalUrl: c.external_url || null,
+        dockerImage: c.docker_image || null,
+        dockerPorts: c.docker_ports || null,
       }));
 
       setChallenges(formattedChallenges);
