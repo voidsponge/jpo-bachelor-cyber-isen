@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Power, PowerOff, Loader2, Terminal } from "lucide-react";
+import { RefreshCw, Power, PowerOff, Loader2, Terminal, Container } from "lucide-react";
 import { toast } from "sonner";
 
 interface DockerTerminalProps {
@@ -241,20 +241,26 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
       <div
         ref={terminalRef}
         onClick={handleTerminalClick}
-        className="flex-1 p-4 overflow-y-auto font-mono text-sm text-green-400 cursor-text min-h-[300px]"
-        style={{ backgroundColor: "#0a0a0a" }}
-      >
-        {terminalOutput.length === 0 ? (
-          <div className="text-muted-foreground">
-            Cliquez sur "Démarrer" pour lancer le container Docker...
-          </div>
-        ) : (
-          terminalOutput.map((line, index) => (
-            <pre key={index} className="whitespace-pre-wrap break-all">
-              {line}
-            </pre>
-          ))
-        )}
+      className="flex-1 p-4 overflow-y-auto font-mono text-sm text-green-400 cursor-text min-h-[300px]"
+      style={{ backgroundColor: "#0a0a0a" }}
+    >
+      {terminalOutput.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-8">
+          <Container className="w-12 h-12 text-primary/50" />
+          <p className="text-gray-400">
+            Cliquez sur "<span className="text-primary">Démarrer</span>" pour lancer le container Docker
+          </p>
+          <p className="text-gray-600 text-xs">
+            Image: {dockerImage}
+          </p>
+        </div>
+      ) : (
+        terminalOutput.map((line, index) => (
+          <pre key={index} className="whitespace-pre-wrap break-all">
+            {line}
+          </pre>
+        ))
+      )}
         
         {/* Input line */}
         {isConnected && (
