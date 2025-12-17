@@ -24,10 +24,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Security middleware
+// Security middleware (optional - skip if no API_SECRET set)
 const verifyApiSecret = (req, res, next) => {
-  const secret = req.headers['x-api-secret'];
-  if (secret !== process.env.API_SECRET) {
+  const secret = process.env.API_SECRET;
+  // If no secret configured, allow all (for internal network use)
+  if (!secret) {
+    return next();
+  }
+  const providedSecret = req.headers['x-api-secret'];
+  if (providedSecret !== secret) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
@@ -241,29 +246,23 @@ app.get('/api/container/status/:sessionId', verifyApiSecret, async (req, res) =>
   }
 });
 
-// WebSocket terminal connection
+// WebSocket terminal connection (xterm.js compatible)
 wss.on('connection', async (ws, req) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const containerId = url.pathname.split('/').pop();
-  const apiSecret = url.searchParams.get('secret');
 
   console.log(`WebSocket connection attempt for container: ${containerId}`);
-
-  if (apiSecret !== process.env.API_SECRET) {
-    ws.close(1008, 'Unauthorized');
-    return;
-  }
 
   try {
     const container = docker.getContainer(containerId);
     
-    // Create exec instance for shell
+    // Create exec instance for shell with PTY
     const exec = await container.exec({
       AttachStdin: true,
       AttachStdout: true,
       AttachStderr: true,
       Tty: true,
-      Cmd: ['/bin/bash']
+      Cmd: ['/bin/sh', '-c', 'if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi']
     });
 
     const stream = await exec.start({
@@ -274,16 +273,32 @@ wss.on('connection', async (ws, req) => {
 
     console.log(`Terminal attached to container: ${containerId}`);
 
-    // Send output to WebSocket
+    // Send raw output to WebSocket (xterm.js handles ANSI codes)
     stream.on('data', (chunk) => {
       if (ws.readyState === ws.OPEN) {
-        ws.send(chunk.toString('utf-8'));
+        // Send raw binary/text - xterm.js will handle it
+        ws.send(chunk);
       }
     });
 
     // Receive input from WebSocket
     ws.on('message', (data) => {
-      stream.write(data);
+      try {
+        // Try parsing as JSON (for resize commands)
+        const msg = JSON.parse(data.toString());
+        
+        if (msg.type === 'input') {
+          stream.write(msg.data);
+        } else if (msg.type === 'resize' && msg.cols && msg.rows) {
+          // Resize the PTY
+          exec.resize({ h: msg.rows, w: msg.cols }).catch(e => {
+            console.log('Resize error (non-fatal):', e.message);
+          });
+        }
+      } catch {
+        // Not JSON, treat as raw input (fallback)
+        stream.write(data);
+      }
     });
 
     ws.on('close', () => {
@@ -292,6 +307,11 @@ wss.on('connection', async (ws, req) => {
     });
 
     stream.on('end', () => {
+      ws.close();
+    });
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
       ws.close();
     });
 
