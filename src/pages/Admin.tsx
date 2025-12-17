@@ -792,6 +792,37 @@ const Admin = () => {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Docker Configuration */}
+                    <div className="space-y-2 p-3 rounded-lg border border-border bg-background/50">
+                      <Label className="flex items-center gap-2 text-sm font-semibold">
+                        🐳 Configuration Docker
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Image Docker</Label>
+                          <Input
+                            value={formData.docker_image}
+                            onChange={(e) => setFormData({ ...formData, docker_image: e.target.value })}
+                            placeholder="ctf-linux-intro:latest"
+                            className="bg-background font-mono text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Ports (host:container)</Label>
+                          <Input
+                            value={formData.docker_ports}
+                            onChange={(e) => setFormData({ ...formData, docker_ports: e.target.value })}
+                            placeholder="8080:80,8443:443"
+                            className="bg-background font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Laisse vide si le challenge n'utilise pas de container Docker
+                      </p>
+                    </div>
+
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={formData.is_active}
