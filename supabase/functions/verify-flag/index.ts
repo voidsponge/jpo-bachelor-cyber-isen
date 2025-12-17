@@ -116,7 +116,7 @@ serve(async (req) => {
     // Get the challenge's correct flag (server-side only!)
     const { data: challenge, error: challengeError } = await supabaseClient
       .from('challenges')
-      .select('id, flag, points, title, is_active, is_terminal_challenge, external_url')
+      .select('id, flag, points, title, is_active, is_terminal_challenge, external_url, docker_image')
       .eq('id', challengeId)
       .single();
 
@@ -168,8 +168,58 @@ serve(async (req) => {
     // Compare flags
     let isCorrect = false;
     
+    // If challenge has docker_image, verify via Docker API
+    if (challenge.docker_image) {
+      try {
+        // Docker API server URL - adjust based on your setup
+        const dockerApiUrl = Deno.env.get('DOCKER_API_URL') || 'http://192.168.240.201:3001';
+        const dockerApiSecret = Deno.env.get('DOCKER_API_SECRET') || '';
+        
+        console.log(`Verifying flag via Docker API for session ${sessionId}`);
+        
+        const dockerResponse = await fetch(`${dockerApiUrl}/api/container/verify-flag`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-API-Secret': dockerApiSecret
+          },
+          body: JSON.stringify({ 
+            sessionId: sessionId,
+            submittedFlag: submittedFlag.trim() 
+          })
+        });
+        
+        if (!dockerResponse.ok) {
+          const errorData = await dockerResponse.json().catch(() => ({}));
+          console.error(`Docker API error: ${dockerResponse.status}`, errorData);
+          
+          if (errorData.error?.includes('No container running')) {
+            return new Response(
+              JSON.stringify({ error: 'Aucun conteneur actif. Lance le challenge d\'abord !' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({ error: 'Erreur de vérification Docker' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const dockerResult = await dockerResponse.json();
+        isCorrect = dockerResult.valid === true;
+        console.log(`Docker API response: valid=${isCorrect}`);
+        
+      } catch (apiError) {
+        console.error('Docker API call failed:', apiError);
+        return new Response(
+          JSON.stringify({ error: 'Service Docker indisponible' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
     // If challenge has external_url, verify via external API
-    if (challenge.external_url) {
+    else if (challenge.external_url) {
       try {
         const apiUrl = challenge.external_url.endsWith('/') 
           ? `${challenge.external_url}api/verify` 

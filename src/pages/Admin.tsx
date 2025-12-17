@@ -743,16 +743,21 @@ const Admin = () => {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel)</span>}</Label>
+                      <Label>Flag (réponse) {(formData.external_url || formData.docker_image) && <span className="text-muted-foreground font-normal">(optionnel)</span>}</Label>
                       <Input
                         value={formData.flag}
                         onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                        required={!formData.external_url}
-                        disabled={!!formData.external_url}
-                        placeholder={formData.external_url ? "Géré par l'API externe" : "ISEN{...}"}
+                        required={!formData.external_url && !formData.docker_image}
+                        disabled={!!formData.external_url || !!formData.docker_image}
+                        placeholder={formData.docker_image ? "🐳 Récupéré depuis /flag.txt du conteneur" : formData.external_url ? "Géré par l'API externe" : "ISEN{...}"}
                         className="bg-background font-mono"
                       />
-                      {formData.external_url && (
+                      {formData.docker_image && (
+                        <p className="text-xs text-emerald-500">
+                          ✓ Le flag sera lu automatiquement depuis <code>/flag.txt</code> dans le conteneur Docker
+                        </p>
+                      )}
+                      {formData.external_url && !formData.docker_image && (
                         <p className="text-xs text-emerald-500">
                           ✓ Le flag sera vérifié via l'API externe ({formData.external_url}/api/verify)
                         </p>

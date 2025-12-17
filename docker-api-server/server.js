@@ -160,6 +160,63 @@ app.post('/api/container/stop', verifyApiSecret, async (req, res) => {
   res.json({ success });
 });
 
+// Get flag from container (reads /flag.txt inside the container)
+app.post('/api/container/verify-flag', verifyApiSecret, async (req, res) => {
+  const { sessionId, submittedFlag } = req.body;
+
+  if (!sessionId || !submittedFlag) {
+    return res.status(400).json({ error: 'Missing sessionId or submittedFlag' });
+  }
+
+  if (!activeContainers.has(sessionId)) {
+    return res.status(404).json({ error: 'No container running for this session', valid: false });
+  }
+
+  const info = activeContainers.get(sessionId);
+
+  try {
+    const container = docker.getContainer(info.containerId);
+    
+    // Execute command to read flag file
+    const exec = await container.exec({
+      Cmd: ['cat', '/flag.txt'],
+      AttachStdout: true,
+      AttachStderr: true
+    });
+
+    const stream = await exec.start({ hijack: true, stdin: false });
+    
+    // Collect output
+    let flagContent = '';
+    await new Promise((resolve, reject) => {
+      stream.on('data', (chunk) => {
+        // Docker multiplexes stdout/stderr, skip the 8-byte header
+        const data = chunk.slice(8).toString('utf-8');
+        flagContent += data;
+      });
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+
+    flagContent = flagContent.trim();
+    
+    if (!flagContent) {
+      console.log(`No flag found in container ${info.containerId}`);
+      return res.json({ valid: false, error: 'Flag not found in container' });
+    }
+
+    // Compare flags (case-insensitive)
+    const isValid = submittedFlag.trim().toLowerCase() === flagContent.toLowerCase();
+    console.log(`Flag verification for session ${sessionId}: ${isValid}`);
+    
+    res.json({ valid: isValid });
+
+  } catch (error) {
+    console.error('Error verifying flag from container:', error);
+    res.status(500).json({ error: error.message, valid: false });
+  }
+});
+
 // Get container status
 app.get('/api/container/status/:sessionId', verifyApiSecret, async (req, res) => {
   const { sessionId } = req.params;
