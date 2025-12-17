@@ -46,20 +46,20 @@ const MatrixRain = ({ opacity = 0.9, speed = 1, density = 1 }: MatrixRainProps) 
         const x = (i / density) * fontSize;
         const y = drops[i] * fontSize;
 
-        // Leading character - bright white/green
+        // Leading character - bright white
         if (drops[i] > 0) {
           ctx.font = `bold ${fontSize}px JetBrains Mono`;
           ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
           ctx.fillText(char, x, y);
 
-          // Trail characters with gradient
+          // Trail characters with red gradient (ISEN colors)
           for (let j = 1; j < 25; j++) {
             const trailY = y - j * fontSize;
             if (trailY > 0) {
               const alpha = Math.max(0, 1 - j * 0.06);
-              const green = 185 - j * 3;
+              const red = 220 - j * 3;
               ctx.font = `${fontSize}px JetBrains Mono`;
-              ctx.fillStyle = `rgba(16, ${green}, 129, ${alpha})`;
+              ctx.fillStyle = `rgba(${red}, 30, 30, ${alpha})`;
               const trailChar = charArray[Math.floor(Math.random() * charArray.length)];
               ctx.fillText(trailChar, x, trailY);
             }
