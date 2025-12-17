@@ -36,6 +36,8 @@ interface Challenge {
   difficulty: number;
   is_terminal_challenge: boolean;
   external_url: string | null;
+  docker_image: string | null;
+  docker_ports: string | null;
 }
 
 interface Submission {
@@ -75,6 +77,8 @@ const Admin = () => {
     difficulty: 1,
     is_terminal_challenge: false,
     external_url: "",
+    docker_image: "",
+    docker_ports: "",
   });
 
   useEffect(() => {
@@ -308,6 +312,8 @@ const Admin = () => {
       difficulty: challenge.difficulty || 1,
       is_terminal_challenge: challenge.is_terminal_challenge || false,
       external_url: challenge.external_url || "",
+      docker_image: challenge.docker_image || "",
+      docker_ports: challenge.docker_ports || "",
     });
     setIsDialogOpen(true);
   };
@@ -325,6 +331,8 @@ const Admin = () => {
       difficulty: 1,
       is_terminal_challenge: false,
       external_url: "",
+      docker_image: "",
+      docker_ports: "",
     });
   };
 

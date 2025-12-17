@@ -20,6 +20,8 @@ export type Database = {
           created_at: string
           description: string
           difficulty: number
+          docker_image: string | null
+          docker_ports: string | null
           external_url: string | null
           file_url: string | null
           flag: string
@@ -36,6 +38,8 @@ export type Database = {
           created_at?: string
           description: string
           difficulty?: number
+          docker_image?: string | null
+          docker_ports?: string | null
           external_url?: string | null
           file_url?: string | null
           flag: string
@@ -52,6 +56,8 @@ export type Database = {
           created_at?: string
           description?: string
           difficulty?: number
+          docker_image?: string | null
+          docker_ports?: string | null
           external_url?: string | null
           file_url?: string | null
           flag?: string
