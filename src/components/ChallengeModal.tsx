@@ -83,10 +83,27 @@ interface ChallengeModalProps {
 
 // Generate a unique session ID for anonymous players (uses sessionStorage for per-session reset)
 const getSessionId = () => {
-  let sessionId = sessionStorage.getItem('ctf_session_id');
+  let sessionId = sessionStorage.getItem("ctf_session_id");
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem('ctf_session_id', sessionId);
+    // Some self-hosted deployments may run over HTTP where crypto.randomUUID can be unavailable.
+    const safeUUID = (() => {
+      const c = globalThis.crypto as Crypto | undefined;
+      if (c?.randomUUID) return c.randomUUID();
+      if (c?.getRandomValues) {
+        // RFC4122 v4 fallback
+        const bytes = new Uint8Array(16);
+        c.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+      }
+      // Last-resort (non-crypto) fallback
+      return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    })();
+
+    sessionId = safeUUID;
+    sessionStorage.setItem("ctf_session_id", sessionId);
   }
   return sessionId;
 };
