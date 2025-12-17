@@ -11,6 +11,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Spectator from "./pages/Spectator";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import DockerShell from "./pages/DockerShell";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/spectator" element={<Spectator />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/docker-shell" element={<DockerShell />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
