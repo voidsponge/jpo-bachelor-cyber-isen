@@ -4,8 +4,6 @@ import { RefreshCw, Power, PowerOff, Loader2, Terminal } from "lucide-react";
 import { toast } from "sonner";
 
 interface DockerTerminalProps {
-  dockerApiUrl: string;
-  dockerApiSecret: string;
   dockerImage: string;
   dockerPorts?: string;
   sessionId: string;
@@ -13,8 +11,6 @@ interface DockerTerminalProps {
 }
 
 const DockerTerminal: React.FC<DockerTerminalProps> = ({
-  dockerApiUrl,
-  dockerApiSecret,
   dockerImage,
   dockerPorts,
   sessionId,
@@ -43,11 +39,10 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
     setTerminalOutput(["[SYSTEM] Démarrage du container..."]);
     
     try {
-      const response = await fetch(`${dockerApiUrl}/api/container/start`, {
+      const response = await fetch(`/api/docker/container/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Secret": dockerApiSecret,
         },
         body: JSON.stringify({
           image: dockerImage,
@@ -76,7 +71,7 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [dockerApiUrl, dockerApiSecret, dockerImage, dockerPorts, sessionId, challengeId]);
+  }, [dockerImage, dockerPorts, sessionId, challengeId]);
 
   // Connect to terminal WebSocket
   const connectTerminal = useCallback((cId: string) => {
@@ -84,8 +79,8 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
       wsRef.current.close();
     }
 
-    const wsUrl = dockerApiUrl.replace("http://", "ws://").replace("https://", "wss://");
-    const ws = new WebSocket(`${wsUrl}/api/terminal/${cId}?secret=${encodeURIComponent(dockerApiSecret)}`);
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${wsProtocol}//${window.location.host}/api/docker/terminal/${cId}`);
     
     ws.onopen = () => {
       console.log("Terminal WebSocket connected");
@@ -112,7 +107,7 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
     };
 
     wsRef.current = ws;
-  }, [dockerApiUrl, dockerApiSecret]);
+  }, []);
 
   // Stop container
   const stopContainer = useCallback(async () => {
@@ -125,11 +120,10 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
         wsRef.current.close();
       }
 
-      const response = await fetch(`${dockerApiUrl}/api/container/stop`, {
+      const response = await fetch(`/api/docker/container/stop`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Secret": dockerApiSecret,
         },
         body: JSON.stringify({ containerId, sessionId }),
       });
@@ -146,7 +140,7 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [containerId, dockerApiUrl, dockerApiSecret, sessionId]);
+  }, [containerId, sessionId]);
 
   // Restart container
   const restartContainer = useCallback(async () => {
