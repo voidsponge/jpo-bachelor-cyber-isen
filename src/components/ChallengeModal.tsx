@@ -6,11 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink, Container } from "lucide-react";
+import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
 import LinuxTerminal from "./LinuxTerminal";
 import DockerTerminal from "./DockerTerminal";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Challenge {
   id: string;
@@ -290,34 +289,13 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
           {/* Docker Terminal for docker challenges */}
           {challenge.dockerImage && !challenge.solved && (
-            <ErrorBoundary
-              fallback={(error) => (
-                <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                  <p className="font-mono text-sm text-foreground">
-                    Erreur d’affichage du challenge Docker (self-host)
-                  </p>
-                  <p className="text-xs text-muted-foreground break-words">
-                    {String(error)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Astuce: rebuild le site, hard refresh (Ctrl+F5), et vérifie le proxy <code>/api/docker/</code>.
-                  </p>
-                </div>
-              )}
-            >
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground font-mono flex items-center gap-2">
-                  <Container className="h-4 w-4" />
-                  Container Docker interactif
-                </p>
-                <DockerTerminal
-                  dockerImage={challenge.dockerImage}
-                  dockerPorts={challenge.dockerPorts || undefined}
-                  sessionId={getSessionId()}
-                  challengeId={challenge.id}
-                />
-              </div>
-            </ErrorBoundary>
+            <DockerTerminal
+              dockerImage={challenge.dockerImage}
+              dockerPorts={challenge.dockerPorts || undefined}
+              sessionId={getSessionId()}
+              challengeId={challenge.id}
+              challengeTitle={challenge.title}
+            />
           )}
 
           {challenge.hint && (
