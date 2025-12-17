@@ -174,6 +174,11 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         submittedFlag: flag.trim(),
       };
 
+      // Docker challenges need sessionId to find the right container (even for logged-in users)
+      if (challenge.dockerImage) {
+        requestBody.sessionId = getSessionId();
+      }
+
       // Add anonymous player data if not logged in
       if (!user) {
         requestBody.sessionId = getSessionId();
