@@ -91,8 +91,15 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
 
     ws.onmessage = (event) => {
       const data = event.data;
-      // Split by newlines and filter empty strings, but preserve formatting
-      setTerminalOutput((prev) => [...prev, data]);
+      // Strip ANSI escape codes for cleaner display
+      const cleanData = data
+        .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')  // Standard ANSI codes
+        .replace(/\x1b\[\?[0-9;]*[a-zA-Z]/g, '') // Private mode codes like ?2004h
+        .replace(/\x1b\][^\x07]*\x07/g, '')      // OSC sequences
+        .replace(/\x1b\([A-Z]/g, '');            // Character set sequences
+      if (cleanData.trim()) {
+        setTerminalOutput((prev) => [...prev, cleanData]);
+      }
     };
 
     ws.onclose = () => {
