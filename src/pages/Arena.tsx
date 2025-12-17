@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
 import TrollOverlay from "@/components/TrollOverlay";
+import CircuitBackground from "@/components/CircuitBackground";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -128,9 +129,10 @@ const Arena = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative">
+        <CircuitBackground />
         <Navbar />
-        <div className="flex items-center justify-center pt-32">
+        <div className="flex items-center justify-center pt-32 relative z-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -138,10 +140,11 @@ const Arena = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <CircuitBackground />
       <Navbar />
 
-      <main className="container px-4 pt-24 pb-12">
+      <main className="container px-4 pt-24 pb-12 relative z-10">
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
