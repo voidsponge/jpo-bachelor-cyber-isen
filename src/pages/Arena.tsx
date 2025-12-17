@@ -129,7 +129,7 @@ const Arena = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background relative">
+      <div className="min-h-screen relative">
         <CircuitBackground />
         <Navbar />
         <div className="flex items-center justify-center pt-32 relative z-10">
@@ -140,7 +140,7 @@ const Arena = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen relative">
       <CircuitBackground />
       <Navbar />
 
