@@ -248,40 +248,54 @@ const DockerTerminal: React.FC<DockerTerminalProps> = ({
       <div
         ref={terminalRef}
         onClick={handleTerminalClick}
-      className="flex-1 p-4 overflow-y-auto font-mono text-sm text-green-400 cursor-text min-h-[300px]"
-      style={{ backgroundColor: "#0a0a0a" }}
-    >
-      {terminalOutput.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-8">
-          <Container className="w-12 h-12 text-primary/50" />
-          <p className="text-gray-400">
-            Cliquez sur "<span className="text-primary">Démarrer</span>" pour lancer le container Docker
-          </p>
-          <p className="text-gray-600 text-xs">
-            Image: {dockerImage}
-          </p>
-        </div>
-      ) : (
-        terminalOutput.map((line, index) => (
-          <pre key={index} className="whitespace-pre-wrap break-all">
-            {line}
-          </pre>
-        ))
-      )}
+        className="flex-1 p-4 overflow-y-auto font-mono text-sm cursor-text min-h-[300px]"
+        style={{ backgroundColor: "#0a0a0a" }}
+      >
+        {terminalOutput.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-8">
+            <Container className="w-12 h-12 text-primary/50" />
+            <p className="text-gray-400">
+              Cliquez sur "<span className="text-primary">Démarrer</span>" pour lancer le container Docker
+            </p>
+            <p className="text-gray-600 text-xs">
+              Image: {dockerImage}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {terminalOutput.map((line, index) => {
+              const isSystem = line.startsWith("[SYSTEM]");
+              const isError = line.startsWith("[ERREUR]");
+              return (
+                <pre 
+                  key={index} 
+                  className={`whitespace-pre-wrap break-all ${
+                    isSystem 
+                      ? "text-blue-400 italic text-xs" 
+                      : isError 
+                        ? "text-red-400" 
+                        : "text-green-400"
+                  }`}
+                >
+                  {line}
+                </pre>
+              );
+            })}
+          </div>
+        )}
         
-        {/* Input line */}
+        {/* Inline input - blends with terminal */}
         {isConnected && (
-          <div className="flex items-center mt-2">
-            <span className="text-primary mr-2">$</span>
+          <div className="flex items-center mt-1">
             <input
               ref={inputRef}
               type="text"
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none text-green-400 font-mono"
-              placeholder="Tapez votre commande..."
+              className="flex-1 bg-transparent outline-none text-green-400 font-mono caret-green-400"
               autoFocus
+              spellCheck={false}
             />
           </div>
         )}
