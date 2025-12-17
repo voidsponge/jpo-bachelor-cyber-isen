@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Terminal, Download, Lightbulb, Loader2, User, Skull, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
 import LinuxTerminal from "./LinuxTerminal";
-import DockerTerminal from "./DockerTerminal";
 
 interface Challenge {
   id: string;
@@ -23,8 +22,6 @@ interface Challenge {
   difficulty?: number;
   isTerminalChallenge?: boolean;
   externalUrl?: string | null;
-  dockerImage?: string | null;
-  dockerPorts?: string | null;
 }
 
 // Confetti celebration function
@@ -173,11 +170,6 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         submittedFlag: flag.trim(),
       };
 
-      // Docker challenges need sessionId to find the right container (even for logged-in users)
-      if (challenge.dockerImage) {
-        requestBody.sessionId = getSessionId();
-      }
-
       // Add anonymous player data if not logged in
       if (!user) {
         requestBody.sessionId = getSessionId();
@@ -233,7 +225,7 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`bg-card border-border ${(challenge.isTerminalChallenge || challenge.dockerImage) ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}>
+      <DialogContent className={`bg-card border-border ${challenge.isTerminalChallenge ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
@@ -285,17 +277,6 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                 </p>
               )}
             </div>
-          )}
-
-          {/* Docker Terminal for docker challenges */}
-          {challenge.dockerImage && !challenge.solved && (
-            <DockerTerminal
-              dockerImage={challenge.dockerImage}
-              dockerPorts={challenge.dockerPorts || undefined}
-              sessionId={getSessionId()}
-              challengeId={challenge.id}
-              challengeTitle={challenge.title}
-            />
           )}
 
           {challenge.hint && (
