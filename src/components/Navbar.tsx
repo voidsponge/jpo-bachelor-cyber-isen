@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Terminal, Trophy, Shield, Home, LogIn, LogOut, Settings, UserCog } from "lucide-react";
+import { Terminal, Trophy, Home, LogIn, LogOut, Settings, UserCog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import isenLogo from "@/assets/isen-logo.png";
 
 const Navbar = () => {
   const location = useLocation();
@@ -24,10 +25,10 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <Shield className="h-8 w-8 text-primary transition-all group-hover:drop-shadow-[0_0_10px_hsl(var(--primary))]" />
+          <Link to="/" className="flex items-center gap-3 group">
+            <img src={isenLogo} alt="ISEN Méditerranée" className="h-8 w-auto" />
             <span className="font-mono text-lg font-bold tracking-tight">
-              <span className="text-primary">ISEN</span>
+              <span className="text-primary">CYBER</span>
               <span className="text-foreground">_CTF</span>
             </span>
           </Link>
