@@ -82,12 +82,10 @@ interface ChallengeModalProps {
 const getSessionId = () => {
   let sessionId = sessionStorage.getItem("ctf_session_id");
   if (!sessionId) {
-    // Some self-hosted deployments may run over HTTP where crypto.randomUUID can be unavailable.
     const safeUUID = (() => {
       const c = globalThis.crypto as Crypto | undefined;
       if (c?.randomUUID) return c.randomUUID();
       if (c?.getRandomValues) {
-        // RFC4122 v4 fallback
         const bytes = new Uint8Array(16);
         c.getRandomValues(bytes);
         bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -95,7 +93,6 @@ const getSessionId = () => {
         const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
       }
-      // Last-resort (non-crypto) fallback
       return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     })();
 
@@ -119,7 +116,7 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
   const [terminalFlag, setTerminalFlag] = useState("");
   const [terminalFlagFound, setTerminalFlagFound] = useState(false);
   const { toast } = useToast();
-  const { user, session } = useAuth();
+  const { user, username } = useAuth(); // Récupération du username du contexte
 
   // Generate terminal flag when modal opens for terminal challenges
   useEffect(() => {
@@ -138,12 +135,37 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
   if (!challenge) return null;
 
+  // --- NOUVELLE FONCTION : Génère l'URL avec les paramètres d'identité ---
+  const getExternalUrl = () => {
+    if (!challenge.externalUrl) return null;
+    
+    try {
+      // On construit l'URL proprement
+      const url = new URL(challenge.externalUrl);
+      
+      // Identifiant unique (User ID si connecté, sinon Session ID local)
+      const sessionId = user ? user.id : getSessionId();
+      
+      // Pseudo (Username si connecté, sinon le champ pseudo local)
+      const playerPseudo = user ? (username || "Membre") : (pseudo || "Anonyme");
+      
+      url.searchParams.set("sessionId", sessionId);
+      url.searchParams.set("pseudo", playerPseudo);
+      
+      return url.toString();
+    } catch (e) {
+      // Fallback si l'URL est malformée
+      console.error("URL externe invalide:", e);
+      return challenge.externalUrl;
+    }
+  };
+  // -----------------------------------------------------------------------
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!flag.trim()) return;
 
-    // For anonymous players, require a pseudo
     if (!user && !pseudo.trim()) {
       toast({
         title: "Pseudo requis",
@@ -170,7 +192,6 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         submittedFlag: flag.trim(),
       };
 
-      // Add anonymous player data if not logged in
       if (!user) {
         requestBody.sessionId = getSessionId();
         requestBody.pseudo = pseudo.trim();
@@ -180,14 +201,10 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         body: requestBody,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (data.success) {
-        // Trigger confetti celebration!
         triggerConfetti();
-        
         toast({
           title: "🎉 Flag correct !",
           description: data.message,
@@ -196,8 +213,6 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
         onSolve(challenge.id);
         setFlag("");
         setShowHint(false);
-        
-        // Delay close to see confetti
         setTimeout(() => onClose(), 1500);
       } else if (data.alreadySolved) {
         toast({
@@ -253,7 +268,6 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
             <p className="text-foreground leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
           </div>
 
-          {/* Linux Terminal for terminal challenges */}
           {challenge.isTerminalChallenge && !challenge.solved && terminalFlag && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground font-mono">
@@ -303,13 +317,42 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
             </div>
           )}
 
+          {/* Bouton pour accéder au challenge externe (VM Docker) */}
           {challenge.externalUrl && (
-            <Button variant="outline" className="w-full gap-2 font-mono border-primary/50 hover:bg-primary/10" asChild>
-              <a href={challenge.externalUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 text-primary" />
-                Accéder au challenge (VM/Docker)
-              </a>
-            </Button>
+            <div className="space-y-2">
+              {!user && !pseudo && (
+                <p className="text-xs text-yellow-500 font-mono">
+                  ⚠️ Entre ton pseudo ci-dessous avant de lancer la machine !
+                </p>
+              )}
+              <Button 
+                variant="outline" 
+                className="w-full gap-2 font-mono border-primary/50 hover:bg-primary/10" 
+                asChild
+                disabled={!user && !pseudo} // Désactivé si anonyme sans pseudo
+              >
+                <a 
+                  href={getExternalUrl() || "#"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (!user && !pseudo) {
+                      e.preventDefault();
+                      toast({
+                        title: "Pseudo requis",
+                        description: "Merci d'entrer un pseudo avant de lancer le challenge",
+                        variant: "destructive"
+                      });
+                      // Focus sur l'input pseudo
+                      document.getElementById("pseudo-input")?.focus();
+                    }
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                  Accéder au challenge (VM/Docker)
+                </a>
+              </Button>
+            </div>
           )}
 
           {challenge.file_url && (
@@ -328,13 +371,13 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Pseudo field for anonymous players */}
               {!user && (
                 <div className="relative">
                   <Input
+                    id="pseudo-input" // Ajout d'un ID pour le focus
                     value={pseudo}
                     onChange={(e) => setPseudo(e.target.value)}
-                    placeholder="Ton pseudo"
+                    placeholder="Ton pseudo (Requis pour la VM)"
                     className="font-mono bg-background border-border pr-10 focus:border-primary focus:ring-primary"
                     disabled={isChecking}
                     maxLength={30}
