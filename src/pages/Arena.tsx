@@ -24,6 +24,11 @@ interface Challenge {
   dockerPorts?: string | null;
 }
 
+// Get session ID for anonymous players
+const getSessionId = () => {
+  return sessionStorage.getItem('ctf_session_id');
+};
+
 const Arena = () => {
   const { user } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -32,16 +37,6 @@ const Arena = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [playerId, setPlayerId] = useState<string | undefined>();
-
-  // Generate a fresh session ID on every Arena mount (for anonymous users)
-  useEffect(() => {
-    if (!user) {
-      const newSessionId = crypto.randomUUID();
-      sessionStorage.setItem('ctf_session_id', newSessionId);
-      sessionStorage.removeItem('ctf_player_id');
-      localStorage.removeItem('player_pseudo');
-    }
-  }, [user]);
 
   useEffect(() => {
     fetchChallenges();
@@ -135,7 +130,6 @@ const Arena = () => {
       )
     );
   };
-
 
   if (isLoading) {
     return (
