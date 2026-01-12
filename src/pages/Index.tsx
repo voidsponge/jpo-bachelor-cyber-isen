@@ -327,7 +327,7 @@ const Index = () => {
               </a>
               {/* Hidden flag for Web challenge - DO NOT REMOVE */}
               {/* FLAG: ISEN{inspect_element_master} */}
-              <span className="text-sm text-muted-foreground font-mono">JPO 2025</span>
+              <span className="text-sm text-muted-foreground font-mono">JPO 2026</span>
             </div>
           </div>
         </div>
