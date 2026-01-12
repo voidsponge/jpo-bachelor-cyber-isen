@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
+import { Trophy, Terminal, Zap, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
@@ -131,6 +132,18 @@ const Arena = () => {
     );
   };
 
+  const handleNewSession = () => {
+    // Clear session storage to reset everything
+    sessionStorage.removeItem('ctf_session_id');
+    sessionStorage.removeItem('ctf_player_id');
+    localStorage.removeItem('player_pseudo');
+    // Reset local state
+    setSolvedIds(new Set());
+    setPlayerId(undefined);
+    // Refresh challenges to show all as unsolved
+    setChallenges(prev => prev.map(c => ({ ...c, solved: false })));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -148,13 +161,25 @@ const Arena = () => {
 
       <main className="container px-4 pt-24 pb-12 relative z-10">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
-            <span className="text-primary">CTF</span> Arena
-          </h1>
-          <p className="text-muted-foreground">
-            Résous les challenges pour gagner des points et grimper au classement
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="font-mono text-3xl md:text-4xl font-bold mb-2">
+              <span className="text-primary">CTF</span> Arena
+            </h1>
+            <p className="text-muted-foreground">
+              Résous les challenges pour gagner des points et grimper au classement
+            </p>
+          </div>
+          {!user && (
+            <Button
+              variant="outline"
+              onClick={handleNewSession}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Nouvelle session
+            </Button>
+          )}
         </div>
 
         {/* Stats Bar */}
