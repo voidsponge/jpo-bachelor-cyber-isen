@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Terminal, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import TrollModePanel from "@/components/TrollModePanel";
@@ -75,10 +75,7 @@ const Admin = () => {
     flag: "",
     is_active: true,
     difficulty: 1,
-    is_terminal_challenge: false,
     external_url: "",
-    docker_image: "",
-    docker_ports: "",
   });
 
   useEffect(() => {
@@ -310,10 +307,7 @@ const Admin = () => {
       flag: challenge.flag,
       is_active: challenge.is_active,
       difficulty: challenge.difficulty || 1,
-      is_terminal_challenge: challenge.is_terminal_challenge || false,
       external_url: challenge.external_url || "",
-      docker_image: challenge.docker_image || "",
-      docker_ports: challenge.docker_ports || "",
     });
     setIsDialogOpen(true);
   };
@@ -329,10 +323,7 @@ const Admin = () => {
       flag: "",
       is_active: true,
       difficulty: 1,
-      is_terminal_challenge: false,
       external_url: "",
-      docker_image: "",
-      docker_ports: "",
     });
   };
 
@@ -743,89 +734,38 @@ const Admin = () => {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Flag (réponse) {(formData.external_url || formData.docker_image) && <span className="text-muted-foreground font-normal">(optionnel)</span>}</Label>
+                      <Label>Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel si géré par l'API externe)</span>}</Label>
                       <Input
                         value={formData.flag}
                         onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                        required={!formData.external_url && !formData.docker_image}
-                        disabled={!!formData.external_url || !!formData.docker_image}
-                        placeholder={formData.docker_image ? "🐳 Récupéré depuis /flag.txt du conteneur" : formData.external_url ? "Géré par l'API externe" : "ISEN{...}"}
+                        required={!formData.external_url}
+                        placeholder={formData.external_url ? "Géré par l'API externe ou remplis ici" : "ISEN{...}"}
                         className="bg-background font-mono"
                       />
-                      {formData.docker_image && (
+                      {formData.external_url && (
                         <p className="text-xs text-emerald-500">
-                          ✓ Le flag sera lu automatiquement depuis <code>/flag.txt</code> dans le conteneur Docker
-                        </p>
-                      )}
-                      {formData.external_url && !formData.docker_image && (
-                        <p className="text-xs text-emerald-500">
-                          ✓ Le flag sera vérifié via l'API externe ({formData.external_url}/api/verify)
+                          ✓ Le flag peut être vérifié via l'API externe ({formData.external_url}/api/verify)
                         </p>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Skull className="h-4 w-4" />
-                          Difficulté
-                        </Label>
-                        <Select
-                          value={formData.difficulty.toString()}
-                          onValueChange={(value) => setFormData({ ...formData, difficulty: parseInt(value) })}
-                        >
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">💀 Facile</SelectItem>
-                            <SelectItem value="2">💀💀 Moyen</SelectItem>
-                            <SelectItem value="3">💀💀💀 Difficile</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Terminal className="h-4 w-4" />
-                          Options
-                        </Label>
-                        <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-background">
-                          <Switch
-                            checked={formData.is_terminal_challenge}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_terminal_challenge: checked })}
-                          />
-                          <span className="text-sm">Terminal Linux</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Docker Configuration */}
-                    <div className="space-y-2 p-3 rounded-lg border border-border bg-background/50">
-                      <Label className="flex items-center gap-2 text-sm font-semibold">
-                        🐳 Configuration Docker
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Skull className="h-4 w-4" />
+                        Difficulté
                       </Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Image Docker</Label>
-                          <Input
-                            value={formData.docker_image}
-                            onChange={(e) => setFormData({ ...formData, docker_image: e.target.value })}
-                            placeholder="ctf-linux-intro:latest"
-                            className="bg-background font-mono text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Ports (host:container)</Label>
-                          <Input
-                            value={formData.docker_ports}
-                            onChange={(e) => setFormData({ ...formData, docker_ports: e.target.value })}
-                            placeholder="8080:80,8443:443"
-                            className="bg-background font-mono text-sm"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Laisse vide si le challenge n'utilise pas de container Docker
-                      </p>
+                      <Select
+                        value={formData.difficulty.toString()}
+                        onValueChange={(value) => setFormData({ ...formData, difficulty: parseInt(value) })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">💀 Facile</SelectItem>
+                          <SelectItem value="2">💀💀 Moyen</SelectItem>
+                          <SelectItem value="3">💀💀💀 Difficile</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="flex items-center gap-2">
