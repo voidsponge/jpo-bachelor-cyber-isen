@@ -3,18 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Play, 
   User, 
   Clock, 
-  MousePointer, 
   FileText, 
   CheckCircle, 
   XCircle, 
-  Eye,
-  Activity
+  Activity,
+  UserX,
+  Loader2
 } from "lucide-react";
 
 interface PlayerEvent {
@@ -43,6 +44,8 @@ const SessionReplay = () => {
   const [events, setEvents] = useState<PlayerEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [anonymizingId, setAnonymizingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSessions();
@@ -157,12 +160,57 @@ const SessionReplay = () => {
     fetchSessionEvents(sessionId);
   };
 
+  const handleAnonymize = async (session: PlayerSession) => {
+    const id = session.player_id || session.user_id;
+    if (!id) return;
+    
+    setAnonymizingId(id);
+    try {
+      const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const newPseudo = `Joueur_${randomId}`;
+      
+      if (session.isAnonymous && session.player_id) {
+        // Anonymize player pseudo
+        const { error } = await supabase
+          .from("players")
+          .update({ pseudo: newPseudo })
+          .eq("id", session.player_id);
+        
+        if (error) throw error;
+      } else if (session.user_id) {
+        // Anonymize user profile
+        const { error } = await supabase
+          .from("profiles")
+          .update({ username: newPseudo })
+          .eq("user_id", session.user_id);
+        
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Pseudo anonymisé",
+        description: `${session.username} → ${newPseudo}`,
+        className: "bg-primary/20 border-primary",
+      });
+      
+      // Refresh sessions
+      fetchSessions();
+    } catch (error) {
+      console.error("Error anonymizing:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'anonymiser ce pseudo",
+        variant: "destructive",
+      });
+    } finally {
+      setAnonymizingId(null);
+    }
+  };
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case "FLAG_CORRECT": return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "FLAG_INCORRECT": return <XCircle className="h-4 w-4 text-red-500" />;
-      case "PAGE_VIEW": return <Eye className="h-4 w-4 text-blue-500" />;
-      case "CLICK": return <MousePointer className="h-4 w-4 text-purple-500" />;
       default: return <Activity className="h-4 w-4 text-muted-foreground" />;
     }
   };
@@ -206,28 +254,66 @@ const SessionReplay = () => {
           <ScrollArea className="h-[500px] pr-4">
             <div className="space-y-2">
               {sessions.map((session) => (
-                <Button
-                  key={session.session_id}
-                  variant={selectedSession === session.session_id ? "default" : "outline"}
-                  className="w-full justify-start h-auto py-3"
-                  onClick={() => handleSelectSession(session.session_id)}
-                >
-                  <div className="flex flex-col items-start gap-1 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold">{session.username}</span>
-                      {session.isAnonymous && (
-                        <Badge variant="secondary" className="text-xs">Anon</Badge>
-                      )}
+                <div key={session.session_id} className="flex gap-2 items-stretch">
+                  <Button
+                    variant={selectedSession === session.session_id ? "default" : "outline"}
+                    className="flex-1 justify-start h-auto py-3"
+                    onClick={() => handleSelectSession(session.session_id)}
+                  >
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold">{session.username}</span>
+                        {session.isAnonymous && (
+                          <Badge variant="secondary" className="text-xs">Anon</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {formatDate(session.lastEvent)}
+                        <span>•</span>
+                        <FileText className="h-3 w-3" />
+                        {session.eventCount} soumissions
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {formatDate(session.lastEvent)}
-                      <span>•</span>
-                      <FileText className="h-3 w-3" />
-                      {session.eventCount} soumissions
-                    </div>
-                  </div>
-                </Button>
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        className="h-auto px-2 border-destructive/50 hover:bg-destructive/20 hover:border-destructive"
+                        disabled={anonymizingId === (session.player_id || session.user_id)}
+                      >
+                        {anonymizingId === (session.player_id || session.user_id) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <UserX className="h-4 w-4 text-destructive" />
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="font-mono">Anonymiser ce joueur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Le pseudo <span className="font-mono font-bold text-foreground">"{session.username}"</span> sera 
+                          remplacé par un identifiant aléatoire (ex: Joueur_X4F2K9).
+                          <br /><br />
+                          Cette action est irréversible.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleAnonymize(session)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Anonymiser
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               ))}
 
               {sessions.length === 0 && (
