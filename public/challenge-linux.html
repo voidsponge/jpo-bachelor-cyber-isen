@@ -80,15 +80,37 @@
         // RÉCUPÉRATION DES PARAMÈTRES JOUEUR
         // ============================================
         const urlParams = new URLSearchParams(window.location.search);
-        const SESSION_ID = urlParams.get('sessionId') || localStorage.getItem('ctf_session') || 'guest-' + Date.now();
-        const PSEUDO = urlParams.get('pseudo') || localStorage.getItem('ctf_pseudo') || 'Anonyme';
         
-        // Sauvegarde locale pour persistance
+        // PRIORITÉ AUX PARAMÈTRES URL (venant du site CTF principal)
+        const urlSessionId = urlParams.get('sessionId');
+        const urlPseudo = urlParams.get('pseudo');
+        
+        // Si les paramètres URL existent, on les utilise en priorité
+        // Sinon on regarde localStorage, sinon on génère un guest
+        let SESSION_ID, PSEUDO;
+        
+        if (urlSessionId && urlSessionId.length > 5) {
+            // Paramètres reçus du CTF - on les utilise et on les sauvegarde
+            SESSION_ID = urlSessionId;
+            PSEUDO = urlPseudo && urlPseudo !== 'null' && urlPseudo !== 'undefined' 
+                ? decodeURIComponent(urlPseudo) 
+                : 'Anonyme';
+            console.log('✅ Session reçue du CTF:', SESSION_ID, 'Pseudo:', PSEUDO);
+        } else {
+            // Pas de paramètres URL - on utilise localStorage ou on génère
+            SESSION_ID = localStorage.getItem('ctf_session') || 'guest-' + Date.now();
+            PSEUDO = localStorage.getItem('ctf_pseudo') || 'Anonyme';
+            console.log('⚠️ Pas de session URL, utilisation localStorage:', SESSION_ID);
+        }
+        
+        // Sauvegarde locale pour persistance sur cette page
         localStorage.setItem('ctf_session', SESSION_ID);
         localStorage.setItem('ctf_pseudo', PSEUDO);
         
         document.getElementById('pseudo').textContent = PSEUDO;
         document.getElementById('sessionDisplay').textContent = SESSION_ID.substring(0, 8) + '...';
+        
+        console.log('🎮 Session finale:', { SESSION_ID, PSEUDO });
 
         let currentContainer = null;
 
