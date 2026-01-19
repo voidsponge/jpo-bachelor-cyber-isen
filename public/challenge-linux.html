@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Terminal - ISEN</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e27; color: #e0e7ff; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { font-size: 2.5em; background: linear-gradient(135deg, #dc2626, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .player-info { background: rgba(220,38,38,0.1); padding: 10px; border-radius: 10px; margin: 15px 0; font-family: monospace; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 20px; padding: 25px; }
+        .btn { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; border: none; padding: 12px 25px; border-radius: 50px; cursor: pointer; font-weight: bold; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(220,38,38,0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-stop { background: #64748b; }
+        .btn-back { background: transparent; border: 2px solid #dc2626; margin-top: 15px; }
+        .terminal-container { height: 500px; background: #000; border-radius: 10px; border: 1px solid #334155; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; }
+        input { background: rgba(15,23,42,0.8); border: 1px solid rgba(220,38,38,0.3); padding: 12px 20px; border-radius: 50px; color: white; width: 100%; margin: 10px 0; font-size: 1em; }
+        input:focus { outline: none; border-color: #dc2626; box-shadow: 0 0 10px rgba(220,38,38,0.3); }
+        .status { padding: 5px 15px; border-radius: 20px; font-size: 0.9em; display: inline-block; margin-top: 10px; }
+        .online { background: rgba(16,185,129,0.2); color: #10b981; }
+        .success-msg { background: rgba(16,185,129,0.1); border: 1px solid #10b981; padding: 15px; border-radius: 10px; margin-top: 15px; }
+        .error-msg { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; padding: 15px; border-radius: 10px; margin-top: 15px; }
+        .isen-logo { height: 40px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐧 Hack Ton Linux</h1>
+            <p style="color: #94a3b8; margin-top: 10px;">Exploitez le système pour trouver le flag caché</p>
+            <div class="player-info">
+                Joueur : <span id="pseudo" style="color:#dc2626; font-weight: bold;">...</span>
+                <span style="color: #64748b; margin-left: 15px;">Session: <span id="sessionDisplay">...</span></span>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🎮 Machine Virtuelle</h2>
+                <button id="launchBtn" class="btn" onclick="launchMachine()">🚀 Lancer la machine</button>
+                <button id="stopBtn" class="btn btn-stop" onclick="stopMachine()" style="display:none">🛑 Arrêter la machine</button>
+                <div id="statusArea"></div>
+                
+                <div id="flagSection" style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(220,38,38,0.2);">
+                    <h3 style="margin-bottom: 15px;">🚩 Soumettre le Flag</h3>
+                    <input type="text" id="flagInput" placeholder="FLAG_ISEN{...} ou ISEN{...}">
+                    <button class="btn" onclick="validateFlag()" id="submitBtn">📤 Envoyer au CTF</button>
+                    <div id="flagResult"></div>
+                </div>
+                
+                <button class="btn btn-back" onclick="backToCTF()">← Retour à l'Arène</button>
+            </div>
+            
+            <div class="terminal-container" id="terminalArea">
+                <div style="height:100%; display:flex; align-items:center; justify-content:center; color:#64748b; flex-direction: column; gap: 10px;">
+                    <span style="font-size: 3em;">🖥️</span>
+                    <span>Terminal éteint - Cliquez sur "Lancer la machine"</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - À ADAPTER SI BESOIN
+        // ============================================
+        const CHALLENGE_ID = "d4751c0c-a147-4d40-97c9-cebd00609903"; // ID du challenge "Hack Ton Linux"
+        const SUPABASE_URL = "https://qjwzplhclyjefueswncx.supabase.co";
+        const CTF_URL = "https://jpo-bachelor-cyber-isen.lovable.app"; // URL de retour vers le CTF
+        const API_URL = `http://${window.location.hostname}:3000`; // API Docker locale
+        
+        // ============================================
+        // RÉCUPÉRATION DES PARAMÈTRES JOUEUR
+        // ============================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const SESSION_ID = urlParams.get('sessionId') || localStorage.getItem('ctf_session') || 'guest-' + Date.now();
+        const PSEUDO = urlParams.get('pseudo') || localStorage.getItem('ctf_pseudo') || 'Anonyme';
+        
+        // Sauvegarde locale pour persistance
+        localStorage.setItem('ctf_session', SESSION_ID);
+        localStorage.setItem('ctf_pseudo', PSEUDO);
+        
+        document.getElementById('pseudo').textContent = PSEUDO;
+        document.getElementById('sessionDisplay').textContent = SESSION_ID.substring(0, 8) + '...';
+
+        let currentContainer = null;
+
+        // ============================================
+        // GESTION DE LA MACHINE DOCKER
+        // ============================================
+        async function launchMachine() {
+            const launchBtn = document.getElementById('launchBtn');
+            launchBtn.disabled = true;
+            launchBtn.textContent = '⏳ Démarrage en cours...';
+            
+            try {
+                const res = await fetch(`${API_URL}/api/start`, { method: 'POST' });
+                const data = await res.json();
+                
+                if(data.success) {
+                    currentContainer = data;
+                    const iframeUrl = data.url.replace('localhost', window.location.hostname);
+                    
+                    document.getElementById('statusArea').innerHTML = '<span class="status online">● Machine en ligne</span>';
+                    document.getElementById('terminalArea').innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#dc2626; background:#000">⚡ Initialisation du shell...</div>';
+                    
+                    // Délai pour laisser le temps au conteneur de démarrer
+                    setTimeout(() => {
+                        document.getElementById('terminalArea').innerHTML = `<iframe src="${iframeUrl}" allow="clipboard-read; clipboard-write"></iframe>`;
+                    }, 3000);
+                    
+                    document.getElementById('flagSection').style.display = 'block';
+                    launchBtn.style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                } else {
+                    throw new Error(data.error || 'Erreur de démarrage');
+                }
+            } catch(e) { 
+                console.error('Erreur:', e);
+                document.getElementById('statusArea').innerHTML = `<div class="error-msg">❌ Erreur: ${e.message || 'Impossible de démarrer la machine'}</div>`;
+                launchBtn.disabled = false;
+                launchBtn.textContent = '🚀 Lancer la machine';
+            }
+        }
+
+        // ============================================
+        // VALIDATION DU FLAG ET ENVOI AU CTF
+        // ============================================
+        async function validateFlag() {
+            const flag = document.getElementById('flagInput').value.trim();
+            const result = document.getElementById('flagResult');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!flag) {
+                result.innerHTML = '<div class="error-msg">⚠️ Veuillez entrer un flag</div>';
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            result.innerHTML = '<div style="color: #94a3b8; padding: 10px;">⏳ Vérification en cours...</div>';
+            
+            try {
+                // Étape 1: Validation locale sur le Docker (optionnel)
+                let localValid = false;
+                try {
+                    const localRes = await fetch(`${API_URL}/api/validate-flag`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ 
+                            flag, 
+                            containerId: currentContainer?.containerId,
+                            sessionId: SESSION_ID,
+                            pseudo: PSEUDO 
+                        })
+                    });
+                    const localData = await localRes.json();
+                    localValid = localData.correct;
+                } catch(e) {
+                    console.log('Validation locale non disponible, envoi direct au CTF');
+                }
+                
+                // Étape 2: Enregistrement sur le CTF Supabase (TOUJOURS)
+                const ctfRes = await fetch(`${SUPABASE_URL}/functions/v1/record-external-submission`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        challengeId: CHALLENGE_ID,
+                        submittedFlag: flag,
+                        sessionId: SESSION_ID,
+                        pseudo: PSEUDO
+                    })
+                });
+                
+                const ctfData = await ctfRes.json();
+                console.log('Réponse CTF:', ctfData);
+                
+                if (ctfData.success && ctfData.correct) {
+                    if (ctfData.alreadyFound) {
+                        result.innerHTML = `<div class="success-msg">
+                            ✅ <strong>Déjà validé !</strong><br>
+                            Tu as déjà résolu ce challenge. Tes ${ctfData.points || ''} points sont comptabilisés.
+                        </div>`;
+                    } else {
+                        result.innerHTML = `<div class="success-msg">
+                            🎉 <strong>Bravo ${PSEUDO} !</strong><br>
+                            ${ctfData.message || `+${ctfData.points} points enregistrés !`}<br>
+                            <small>Score total: ${ctfData.score || 'N/A'} pts | Flags trouvés: ${ctfData.totalFlags || 'N/A'}</small>
+                        </div>`;
+                        
+                        // Animation de célébration
+                        document.body.style.animation = 'flash 0.5s';
+                    }
+                } else {
+                    result.innerHTML = `<div class="error-msg">
+                        ❌ <strong>Flag incorrect</strong><br>
+                        ${ctfData.message || ctfData.error || 'Essaie encore !'}
+                    </div>`;
+                }
+                
+            } catch(e) {
+                console.error('Erreur validation:', e);
+                result.innerHTML = `<div class="error-msg">❌ Erreur de communication avec le serveur CTF</div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        // ============================================
+        // FONCTIONS UTILITAIRES
+        // ============================================
+        function stopMachine() { 
+            if (currentContainer) {
+                navigator.sendBeacon(`${API_URL}/api/stop`, JSON.stringify({ containerId: currentContainer.containerId }));
+            }
+            location.reload(); 
+        }
+        
+        function backToCTF() {
+            window.location.href = `${CTF_URL}/arena?sessionId=${SESSION_ID}&pseudo=${encodeURIComponent(PSEUDO)}`;
+        }
+        
+        // Nettoyage automatique à la fermeture
+        window.addEventListener('beforeunload', () => {
+            if (currentContainer) {
+                navigator.sendBeacon(`${API_URL}/api/stop`, JSON.stringify({ containerId: currentContainer.containerId }));
+            }
+        });
+        
+        // Permettre validation avec Entrée
+        document.getElementById('flagInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateFlag();
+        });
+    </script>
+    
+    <style>
+        @keyframes flash {
+            0%, 100% { background-color: #0a0e27; }
+            50% { background-color: rgba(16, 185, 129, 0.1); }
+        }
+    </style>
+</body>
+</html>
