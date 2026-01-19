@@ -26,7 +26,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <img src={isenLogo} alt="ISEN Méditerranée" className="h-8 w-auto bg-white rounded px-1" />
+            <img src={isenLogo} alt="ISEN Méditerranée" className="h-8 w-auto rounded px-1" />
             <span className="font-mono text-lg font-bold tracking-tight">
               <span className="text-primary">CYBER</span>
               <span className="text-foreground">_CTF</span>

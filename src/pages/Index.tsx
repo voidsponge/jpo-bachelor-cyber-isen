@@ -311,8 +311,8 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <Shield className="h-6 w-6 text-primary" />
               <div>
-                <span className="font-mono text-sm text-foreground font-semibold">ISEN Yncréa Méditerranée</span>
-                <span className="text-muted-foreground text-sm ml-2">- Toulon</span>
+                <span className="font-mono text-sm text-foreground font-semibold">ISEN Méditerranée</span>
+                <span className="text-muted-foreground text-sm ml-2">- Campus de Toulon</span>
               </div>
             </div>
             <div className="flex items-center gap-6">
