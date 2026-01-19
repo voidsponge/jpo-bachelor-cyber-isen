@@ -305,7 +305,18 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
 
           {challenge.externalUrl && (
             <Button variant="outline" className="w-full gap-2 font-mono border-primary/50 hover:bg-primary/10" asChild>
-              <a href={challenge.externalUrl} target="_blank" rel="noopener noreferrer">
+              <a 
+                href={(() => {
+                  const url = new URL(challenge.externalUrl, window.location.origin);
+                  const sessionId = user?.id || getSessionId();
+                  const playerPseudo = user ? undefined : pseudo || localStorage.getItem('ctf_pseudo') || 'Anonyme';
+                  url.searchParams.set('sessionId', sessionId);
+                  if (playerPseudo) url.searchParams.set('pseudo', playerPseudo);
+                  return url.toString();
+                })()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
                 <ExternalLink className="h-4 w-4 text-primary" />
                 Accéder au challenge (VM/Docker)
               </a>
