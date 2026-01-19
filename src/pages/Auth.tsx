@@ -16,25 +16,19 @@ const authSchema = z.object({
 });
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const validateForm = () => {
     try {
-      if (isLogin) {
-        authSchema.pick({ email: true, password: true }).parse({ email, password });
-      } else {
-        authSchema.parse({ email, password, username });
-      }
+      authSchema.pick({ email: true, password: true }).parse({ email, password });
       setErrors({});
       return true;
     } catch (error) {
@@ -59,42 +53,22 @@ const Auth = () => {
     setIsSubmitting(true);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            title: "Erreur de connexion",
-            description: error.message === "Invalid login credentials" 
-              ? "Email ou mot de passe incorrect" 
-              : error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Connexion réussie !",
-            description: "Bienvenue dans l'arène !",
-            className: "bg-primary/20 border-primary",
-          });
-          navigate("/arena");
-        }
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: "Erreur de connexion",
+          description: error.message === "Invalid login credentials" 
+            ? "Email ou mot de passe incorrect" 
+            : error.message,
+          variant: "destructive",
+        });
       } else {
-        const { error } = await signUp(email, password, username);
-        if (error) {
-          toast({
-            title: "Erreur d'inscription",
-            description: error.message.includes("already registered")
-              ? "Cet email est déjà utilisé"
-              : error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Inscription réussie !",
-            description: "Ton compte a été créé. Bienvenue !",
-            className: "bg-primary/20 border-primary",
-          });
-          navigate("/arena");
-        }
+        toast({
+          title: "Connexion réussie !",
+          description: "Bienvenue dans l'arène !",
+          className: "bg-primary/20 border-primary",
+        });
+        navigate("/arena");
       }
     } catch (error) {
       toast({
@@ -119,37 +93,15 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="font-mono text-2xl">
-            {isLogin ? "Connexion" : "Inscription"}
+            Connexion Admin
           </CardTitle>
           <CardDescription>
-            {isLogin 
-              ? "Entre dans l'arène et prouve tes compétences"
-              : "Crée ton compte pour participer au CTF"
-            }
+            Accès réservé aux administrateurs
           </CardDescription>
         </CardHeader>
         
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="username" className="font-mono">Pseudo</Label>
-                <div className="relative">
-                  <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="CyberNinja"
-                    className="font-mono bg-background"
-                  />
-                </div>
-                {errors.username && (
-                  <p className="text-sm text-destructive">{errors.username}</p>
-                )}
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="email" className="font-mono">Email</Label>
               <Input
@@ -157,7 +109,7 @@ const Auth = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="hacker@isen.fr"
+                placeholder="admin@isen.fr"
                 className="font-mono bg-background"
               />
               {errors.email && (
@@ -197,32 +149,16 @@ const Auth = () => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {isLogin ? "Connexion..." : "Inscription..."}
+                  Connexion...
                 </>
               ) : (
                 <>
                   <Terminal className="h-4 w-4" />
-                  {isLogin ? "Se connecter" : "S'inscrire"}
+                  Se connecter
                 </>
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setErrors({});
-              }}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin 
-                ? "Pas encore de compte ? Inscris-toi"
-                : "Déjà un compte ? Connecte-toi"
-              }
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
