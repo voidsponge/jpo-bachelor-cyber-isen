@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Download, BarChart3, Monitor, Ghost, Flame, Play, Upload, X, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import TrollModePanel from "@/components/TrollModePanel";
@@ -36,6 +36,7 @@ interface Challenge {
   difficulty: number;
   is_terminal_challenge: boolean;
   external_url: string | null;
+  file_url: string | null;
   docker_image: string | null;
   docker_ports: string | null;
 }
@@ -76,7 +77,10 @@ const Admin = () => {
     is_active: true,
     difficulty: 1,
     external_url: "",
+    file_url: "",
   });
+  
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -308,6 +312,7 @@ const Admin = () => {
       is_active: challenge.is_active,
       difficulty: challenge.difficulty || 1,
       external_url: challenge.external_url || "",
+      file_url: challenge.file_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -324,7 +329,67 @@ const Admin = () => {
       is_active: true,
       difficulty: 1,
       external_url: "",
+      file_url: "",
     });
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Limit file size to 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "La taille maximale est de 10 Mo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Create unique filename with timestamp
+      const timestamp = Date.now();
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${timestamp}_${sanitizedName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('challenge-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('challenge-files')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, file_url: publicUrl });
+
+      toast({
+        title: "Fichier uploadé",
+        description: file.name,
+        className: "bg-primary/20 border-primary",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Erreur d'upload",
+        description: "Impossible d'uploader le fichier",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeFile = () => {
+    setFormData({ ...formData, file_url: "" });
   };
 
   const handleResetCTF = async () => {
@@ -693,6 +758,54 @@ const Admin = () => {
                         className="bg-background"
                       />
                     </div>
+                    
+                    {/* File Upload Section */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Upload className="h-4 w-4" />
+                        Fichier joint (optionnel)
+                      </Label>
+                      {formData.file_url ? (
+                        <div className="flex items-center gap-2 p-3 bg-background rounded-lg border">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <a 
+                            href={formData.file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex-1 text-sm text-primary hover:underline truncate"
+                          >
+                            {formData.file_url.split('/').pop()}
+                          </a>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={removeFile}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <Input
+                            type="file"
+                            onChange={handleFileUpload}
+                            disabled={isUploading}
+                            className="bg-background cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                            accept="image/*,.pdf,.zip,.pcap,.txt,.py,.js,.html,.css,.json,.xml,.csv,.doc,.docx"
+                          />
+                          {isUploading && (
+                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
+                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Images, PDF, ZIP, PCAP, scripts... (max 10 Mo)
+                      </p>
+                    </div>
                     <div className="space-y-2">
                       <Label>URL Externe (Docker/VM)</Label>
                       <div className="flex gap-2">
@@ -791,6 +904,7 @@ const Admin = () => {
                     <TableHead>Catégorie</TableHead>
                     <TableHead>Points</TableHead>
                     <TableHead>Flag</TableHead>
+                    <TableHead>Fichier</TableHead>
                     <TableHead>Actif</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -829,6 +943,21 @@ const Admin = () => {
                       <TableCell className="font-mono text-primary">{challenge.points}</TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground max-w-[150px] truncate">
                         {challenge.flag}
+                      </TableCell>
+                      <TableCell>
+                        {challenge.file_url ? (
+                          <a 
+                            href={challenge.file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-primary hover:underline text-xs"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Fichier
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Switch
