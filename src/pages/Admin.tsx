@@ -800,12 +800,24 @@ const Admin = () => {
                     <TableRow key={challenge.id}>
                       <TableCell className="font-mono text-xs">
                         <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(challenge.id);
-                            toast({ title: "ID copié", description: challenge.id });
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(challenge.id);
+                              toast({ title: "ID copié", description: challenge.id });
+                            } catch {
+                              // Fallback for non-HTTPS contexts
+                              const textArea = document.createElement("textarea");
+                              textArea.value = challenge.id;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand("copy");
+                              document.body.removeChild(textArea);
+                              toast({ title: "ID copié", description: challenge.id });
+                            }
                           }}
                           className="text-muted-foreground hover:text-primary transition-colors cursor-pointer truncate max-w-[80px] block"
-                          title={challenge.id}
+                          title={`Cliquer pour copier: ${challenge.id}`}
                         >
                           {challenge.id.slice(0, 8)}...
                         </button>
