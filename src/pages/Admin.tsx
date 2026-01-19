@@ -21,7 +21,7 @@ import TrollModePanel from "@/components/TrollModePanel";
 import ChallengeHeatmap from "@/components/admin/ChallengeHeatmap";
 import SessionReplay from "@/components/admin/SessionReplay";
 
-type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
+type ChallengeCategory = "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics" | "QR CODE";
 
 interface Challenge {
   id: string;
@@ -724,6 +724,7 @@ const Admin = () => {
                             <SelectItem value="Stegano">Stegano</SelectItem>
                             <SelectItem value="Logic">Logic</SelectItem>
                             <SelectItem value="Forensics">Forensics</SelectItem>
+                            <SelectItem value="QR CODE">QR CODE</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
