@@ -218,11 +218,8 @@ serve(async (req) => {
         );
       }
     }
-    // If challenge has external_url, try external API first, fallback to database flag
+    // If challenge has external_url, verify via external API
     else if (challenge.external_url) {
-      // Check if we have a database flag to use as fallback
-      const hasDbFlag = challenge.flag && challenge.flag.trim().length > 0;
-      
       try {
         const apiUrl = challenge.external_url.endsWith('/') 
           ? `${challenge.external_url}api/verify` 
@@ -230,49 +227,30 @@ serve(async (req) => {
         
         console.log(`Calling external API: ${apiUrl}`);
         
-        // Set a timeout for external API calls (5 seconds)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
         const externalResponse = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ flag: submittedFlag.trim() }),
-          signal: controller.signal
+          body: JSON.stringify({ flag: submittedFlag.trim() })
         });
-        
-        clearTimeout(timeoutId);
         
         if (!externalResponse.ok) {
           console.error(`External API error: ${externalResponse.status}`);
-          // If external API fails but we have a database flag, use it
-          if (hasDbFlag) {
-            console.log('Falling back to database flag verification');
-            isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
-          } else {
-            return new Response(
-              JSON.stringify({ error: 'Erreur de vérification externe' }),
-              { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        } else {
-          const externalResult = await externalResponse.json();
-          isCorrect = externalResult.valid === true;
-          console.log(`External API response: valid=${isCorrect}`);
-        }
-        
-      } catch (apiError) {
-        console.error('External API call failed:', apiError);
-        // If external API is unreachable but we have a database flag, use it
-        if (hasDbFlag) {
-          console.log('External API unreachable, falling back to database flag verification');
-          isCorrect = submittedFlag.trim().toLowerCase() === challenge.flag.toLowerCase();
-        } else {
           return new Response(
-            JSON.stringify({ error: 'Service externe indisponible. Remplissez le flag dans l\'admin ou rendez l\'API accessible.' }),
+            JSON.stringify({ error: 'Erreur de vérification externe' }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        
+        const externalResult = await externalResponse.json();
+        isCorrect = externalResult.valid === true;
+        console.log(`External API response: valid=${isCorrect}`);
+        
+      } catch (apiError) {
+        console.error('External API call failed:', apiError);
+        return new Response(
+          JSON.stringify({ error: 'Service externe indisponible' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
     // For terminal challenges, accept any valid dynamic flag format
