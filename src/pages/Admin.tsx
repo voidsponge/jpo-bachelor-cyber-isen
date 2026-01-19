@@ -786,6 +786,7 @@ const Admin = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>ID</TableHead>
                     <TableHead>Titre</TableHead>
                     <TableHead>Catégorie</TableHead>
                     <TableHead>Points</TableHead>
@@ -797,6 +798,18 @@ const Admin = () => {
                 <TableBody>
                   {challenges.map((challenge) => (
                     <TableRow key={challenge.id}>
+                      <TableCell className="font-mono text-xs">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(challenge.id);
+                            toast({ title: "ID copié", description: challenge.id });
+                          }}
+                          className="text-muted-foreground hover:text-primary transition-colors cursor-pointer truncate max-w-[80px] block"
+                          title={challenge.id}
+                        >
+                          {challenge.id.slice(0, 8)}...
+                        </button>
+                      </TableCell>
                       <TableCell className="font-mono font-medium">{challenge.title}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{challenge.category}</Badge>
