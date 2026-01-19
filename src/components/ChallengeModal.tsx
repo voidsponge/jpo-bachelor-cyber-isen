@@ -119,7 +119,7 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
   const [terminalFlag, setTerminalFlag] = useState("");
   const [terminalFlagFound, setTerminalFlagFound] = useState(false);
   const { toast } = useToast();
-  const { user, session } = useAuth();
+  const { user, session, username } = useAuth();
 
   // Generate terminal flag when modal opens for terminal challenges
   useEffect(() => {
@@ -309,9 +309,11 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
                 href={(() => {
                   const url = new URL(challenge.externalUrl, window.location.origin);
                   const sessionId = user?.id || getSessionId();
-                  const playerPseudo = user ? undefined : pseudo || localStorage.getItem('ctf_pseudo') || 'Anonyme';
+                  // Toujours envoyer le pseudo pour les utilisateurs anonymes
+                  const playerPseudo = user ? (username || 'Utilisateur') : (pseudo || localStorage.getItem('ctf_pseudo') || 'Anonyme');
                   url.searchParams.set('sessionId', sessionId);
-                  if (playerPseudo) url.searchParams.set('pseudo', playerPseudo);
+                  url.searchParams.set('pseudo', playerPseudo);
+                  console.log('🔗 URL externe:', url.toString());
                   return url.toString();
                 })()} 
                 target="_blank" 
