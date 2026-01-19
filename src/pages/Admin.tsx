@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Download, BarChart3, Monitor, Ghost, Flame, Play } from "lucide-react";
+import { Shield, Plus, Pencil, Trash2, Users, FileText, Loader2, RefreshCw, AlertTriangle, RotateCcw, Skull, Download, BarChart3, Monitor, Ghost, Flame, Play, Upload, Link, X } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import TrollModePanel from "@/components/TrollModePanel";
@@ -38,6 +38,7 @@ interface Challenge {
   external_url: string | null;
   docker_image: string | null;
   docker_ports: string | null;
+  file_url: string | null;
 }
 
 interface Submission {
@@ -76,7 +77,9 @@ const Admin = () => {
     is_active: true,
     difficulty: 1,
     external_url: "",
+    file_url: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -308,6 +311,7 @@ const Admin = () => {
       is_active: challenge.is_active,
       difficulty: challenge.difficulty || 1,
       external_url: challenge.external_url || "",
+      file_url: challenge.file_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -324,7 +328,49 @@ const Admin = () => {
       is_active: true,
       difficulty: 1,
       external_url: "",
+      file_url: "",
     });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `challenges/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('challenge-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('challenge-files')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, file_url: publicUrl });
+      toast({
+        title: "Fichier uploadé",
+        description: file.name,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Erreur d'upload",
+        description: "Impossible d'uploader le fichier",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFormData({ ...formData, file_url: "" });
   };
 
   const handleResetCTF = async () => {
@@ -693,45 +739,90 @@ const Admin = () => {
                         className="bg-background"
                       />
                     </div>
+
+                    {/* File Upload Section */}
                     <div className="space-y-2">
-                      <Label>URL Externe (Docker/VM)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={formData.external_url}
-                          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                          placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
-                          className="bg-background font-mono text-sm flex-1"
-                        />
-                        {formData.external_url && (
+                      <Label className="flex items-center gap-2">
+                        <Upload className="h-4 w-4" />
+                        Fichier attaché (optionnel)
+                      </Label>
+                      {formData.file_url ? (
+                        <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                          <a 
+                            href={formData.file_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline truncate flex-1"
+                          >
+                            {formData.file_url.split('/').pop()}
+                          </a>
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`${formData.external_url}/api/verify`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ flag: 'TEST_CONNECTION' }),
-                                });
-                                if (response.ok) {
-                                  toast({ title: "✅ API accessible", description: "L'endpoint répond correctement." });
-                                } else {
-                                  toast({ title: "❌ Erreur API", description: `HTTP ${response.status}`, variant: "destructive" });
-                                }
-                              } catch (error) {
-                                toast({ title: "❌ Connexion impossible", description: "Vérifiez l'URL et que le serveur est accessible.", variant: "destructive" });
-                              }
-                            }}
-                            className="whitespace-nowrap"
+                            onClick={handleRemoveFile}
                           >
-                            Tester API
+                            <X className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="file"
+                            onChange={handleFileUpload}
+                            disabled={isUploading}
+                            className="bg-background"
+                            accept=".pdf,.zip,.rar,.7z,.tar,.gz,.png,.jpg,.jpeg,.gif,.txt,.py,.js,.html,.css,.c,.cpp,.java"
+                          />
+                          {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">
-                        Lien vers un container Docker ou une VM hébergeant le challenge
+                        PDF, archives, images, code source...
                       </p>
+                    </div>
+
+                    {/* External URL Section */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Link className="h-4 w-4" />
+                        Liens externes
+                      </Label>
+                      <Input
+                        value={formData.external_url}
+                        onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                        placeholder="https://example.com ou http://192.168.1.10:8080"
+                        className="bg-background font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Lien vers un site web, un container Docker ou une VM
+                      </p>
+                      {formData.external_url && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`${formData.external_url}/api/verify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ flag: 'TEST_CONNECTION' }),
+                              });
+                              if (response.ok) {
+                                toast({ title: "✅ API accessible", description: "L'endpoint répond correctement." });
+                              } else {
+                                toast({ title: "❌ Erreur API", description: `HTTP ${response.status}`, variant: "destructive" });
+                              }
+                            } catch (error) {
+                              toast({ title: "❌ Connexion impossible", description: "Vérifiez l'URL et que le serveur est accessible.", variant: "destructive" });
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          Tester API Docker/VM
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel si géré par l'API externe)</span>}</Label>
