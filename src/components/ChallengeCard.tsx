@@ -1,11 +1,11 @@
-import { Lock, CheckCircle2, Globe, Search, Key, Image, Code, Network, Skull } from "lucide-react";
+import { Lock, CheckCircle2, Globe, Search, Key, Image, Code, Network, Skull, QrCode } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export interface Challenge {
   id: string;
   title: string;
-  category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
+  category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics" | "QR CODE";
   points: number;
   description: string;
   hint?: string | null;
@@ -46,6 +46,7 @@ const categoryIcons = {
   Stegano: Image,
   Logic: Code,
   Forensics: Network,
+  "QR CODE": QrCode,
 };
 
 const categoryColors = {
@@ -55,6 +56,7 @@ const categoryColors = {
   Stegano: "bg-pink-500/20 text-pink-400 border-pink-500/30",
   Logic: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   Forensics: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+  "QR CODE": "bg-green-500/20 text-green-400 border-green-500/30",
 };
 
 const ChallengeCard = ({ challenge, onClick }: ChallengeCardProps) => {

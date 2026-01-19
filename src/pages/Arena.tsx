@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface Challenge {
   id: string;
   title: string;
-  category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics";
+  category: "Web" | "OSINT" | "Crypto" | "Stegano" | "Logic" | "Forensics" | "QR CODE";
   points: number;
   description: string;
   hint: string | null;
