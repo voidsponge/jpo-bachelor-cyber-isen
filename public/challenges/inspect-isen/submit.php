@@ -246,8 +246,10 @@
 
     <script>
         // Configuration CTF
+        const urlParams = new URLSearchParams(window.location.search);
         const CONFIG = {
-            challengeId: new URLSearchParams(window.location.search).get('challengeId'),
+            // Accepte challengeId OU challenge comme paramètre
+            challengeId: urlParams.get('challengeId') || urlParams.get('challenge'),
             ctfUrl: 'https://jpo-bachelor-cyber-isen.lovable.app',
             supabaseUrl: 'https://qjwzplhclyjefueswncx.supabase.co',
             supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqd3pwbGhjbHlqZWZ1ZXN3bmN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzA0NjYsImV4cCI6MjA4MTQ0NjQ2Nn0.VzoX79TA7sTST_y1g6nlTLJjrWEAmrmeESFbunG3iik'
