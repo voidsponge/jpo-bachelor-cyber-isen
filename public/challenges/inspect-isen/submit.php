@@ -245,156 +245,132 @@
     </div>
 
     <script>
-        // Configuration CTF
+        // Basé sur le template "button-redirect" (même logique d'identité + remontée)
         const urlParams = new URLSearchParams(window.location.search);
+
         const CONFIG = {
-            // Accepte challengeId OU challenge comme paramètre
-            challengeId: urlParams.get('challengeId') || urlParams.get('challenge'),
+            // Accepte challengeId (standard) OU challenge (fallback)
+            challengeId: urlParams.get('challengeId') || urlParams.get('challenge') || '',
             ctfUrl: 'https://jpo-bachelor-cyber-isen.lovable.app',
             supabaseUrl: 'https://qjwzplhclyjefueswncx.supabase.co',
-            supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqd3pwbGhjbHlqZWZ1ZXN3bmN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzA0NjYsImV4cCI6MjA4MTQ0NjQ2Nn0.VzoX79TA7sTST_y1g6nlTLJjrWEAmrmeESFbunG3iik'
+            supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqd3pwbGhjbHlqZWZ1ZXN3bmN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzA0NjYsImV4cCI6MjA4MTQ0NjQ2Nn0.VzoX79TA7sTST_y1g6nlTLJjrWEAmrmeESFbunG3iik',
         };
 
-        // Récupérer les infos de session depuis l'URL (priorité) ou localStorage
         function getSessionInfo() {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // Priorité aux paramètres URL (passés par le CTF)
             let sessionId = urlParams.get('sessionId');
             let pseudo = urlParams.get('pseudo');
-            
-            // Fallback sur localStorage si pas dans l'URL
+
             if (!sessionId) {
                 sessionId = localStorage.getItem('ctf_session_id');
+                if (!sessionId) {
+                    sessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+                    localStorage.setItem('ctf_session_id', sessionId);
+                }
             }
+
             if (!pseudo) {
-                pseudo = localStorage.getItem('ctf_pseudo');
+                pseudo = localStorage.getItem('playerPseudo') || localStorage.getItem('ctf_pseudo') || 'Anonyme';
             }
-            
-            // Générer un nouveau sessionId si toujours pas disponible
-            if (!sessionId) {
-                sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                localStorage.setItem('ctf_session_id', sessionId);
-            }
-            
+
             return { sessionId, pseudo };
         }
 
+        const { sessionId, pseudo } = getSessionInfo();
+
         async function validateFlag() {
-            const flagInput = document.getElementById('flagInput');
+            const flagInputEl = document.getElementById('flagInput');
             const submitBtn = document.getElementById('submitBtn');
-            const status = document.getElementById('status');
-            const submittedFlag = flagInput.value.trim();
+            const statusEl = document.getElementById('status');
 
-            // Validation basique
+            const submittedFlag = flagInputEl.value.trim();
+
             if (!submittedFlag) {
-                status.className = 'status error';
-                status.textContent = '❌ Entre un flag avant de valider !';
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Veuillez entrer le flag';
                 return;
             }
 
-            // Vérifier que le challengeId est présent
             if (!CONFIG.challengeId) {
-                status.className = 'status warning';
-                status.textContent = '⚠️ ID du challenge manquant. Accède à ce challenge depuis la plateforme CTF.';
+                statusEl.className = 'status warning';
+                statusEl.textContent = '⚠️ ID du challenge manquant dans l\'URL';
                 return;
             }
 
-            // Récupérer les infos de session
-            const { sessionId, pseudo } = getSessionInfo();
-
-            if (!pseudo) {
-                status.className = 'status warning';
-                status.textContent = '⚠️ Pseudo manquant. Retourne sur la plateforme CTF et accède au challenge depuis là-bas.';
-                return;
-            }
-
-            // Désactiver le bouton pendant la requête
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Vérification...';
-            status.className = 'status';
-            status.style.display = 'none';
+            submitBtn.textContent = 'Validation...';
 
             try {
-                // Appel à l'Edge Function record-external-submission
                 const response = await fetch(`${CONFIG.supabaseUrl}/functions/v1/record-external-submission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': CONFIG.supabaseAnonKey,
-                        'Authorization': `Bearer ${CONFIG.supabaseAnonKey}`
+                        'Authorization': `Bearer ${CONFIG.supabaseAnonKey}`,
                     },
                     body: JSON.stringify({
                         challengeId: CONFIG.challengeId,
-                        submittedFlag: submittedFlag,
-                        sessionId: sessionId,
-                        pseudo: pseudo
-                    })
+                        submittedFlag,
+                        sessionId,
+                        pseudo,
+                    }),
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    status.className = 'status success';
-                    status.textContent = `🎉 ${result.message}`;
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `🎉 ${result.message} (+${result.points ?? 0} points)`;
+                    submitBtn.textContent = '✓ Validé !';
                     createConfetti();
-                    
-                    // Proposer de retourner au CTF après 3 secondes
-                    setTimeout(() => {
-                        if (confirm('Bravo ! Veux-tu retourner à la plateforme CTF ?')) {
-                            window.location.href = CONFIG.ctfUrl + '/arena';
-                        }
-                    }, 2000);
                 } else {
-                    status.className = 'status error';
-                    status.textContent = `❌ ${result.message || 'Flag incorrect. Réessaie !'}`;
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `❌ ${result.message || 'Flag incorrect'}`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Valider le Flag';
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                status.className = 'status error';
-                status.textContent = '❌ Erreur de connexion au serveur. Vérifie ta connexion internet.';
-            } finally {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Erreur de connexion au serveur CTF';
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Valider le Flag';
             }
         }
 
-        // Confetti pour célébrer
         function createConfetti() {
-            const colors = ['#e31937', '#00ff88', '#ffc800', '#00aaff', '#ff44aa'];
-            for (let i = 0; i < 100; i++) {
-                setTimeout(() => {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-                    confetti.style.left = Math.random() * 100 + 'vw';
-                    confetti.style.top = '-10px';
-                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-                    document.body.appendChild(confetti);
-                    
-                    setTimeout(() => confetti.remove(), 3000);
-                }, i * 30);
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed;
+                    width: 10px;
+                    height: 10px;
+                    background: ${['#dc2626', '#22c55e', '#3b82f6', '#eab308', '#ec4899'][Math.floor(Math.random() * 5)]};
+                    left: ${Math.random() * 100}vw;
+                    top: -10px;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    animation: fall ${2 + Math.random() * 2}s linear forwards;
+                `;
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+
+            if (!document.getElementById('confettiStyle')) {
+                const style = document.createElement('style');
+                style.id = 'confettiStyle';
+                style.textContent = `
+                    @keyframes fall {
+                        to {
+                            transform: translateY(100vh) rotate(720deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
             }
         }
 
-        // Soumettre avec Enter
-        document.getElementById('flagInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                validateFlag();
-            }
-        });
-
-        // Vérifier au chargement si les paramètres sont présents
-        window.addEventListener('load', function() {
-            const { sessionId, pseudo } = getSessionInfo();
-            
-            if (!CONFIG.challengeId) {
-                document.getElementById('status').className = 'status warning';
-                document.getElementById('status').textContent = '⚠️ Accède à ce challenge depuis la plateforme CTF pour que tes points soient comptabilisés.';
-            } else if (!pseudo) {
-                document.getElementById('status').className = 'status warning';
-                document.getElementById('status').textContent = '⚠️ Pseudo manquant. Retourne sur la plateforme CTF.';
-            }
+        document.getElementById('flagInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateFlag();
         });
     </script>
 </body>
