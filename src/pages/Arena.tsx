@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Trophy, Terminal, Zap, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Trophy, Terminal, Zap, Loader2, Filter } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeModal from "@/components/ChallengeModal";
@@ -37,6 +37,17 @@ const Arena = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [playerId, setPlayerId] = useState<string | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(challenges.map(c => c.category)));
+    return cats.sort();
+  }, [challenges]);
+
+  const filteredChallenges = useMemo(() => {
+    if (selectedCategory === "all") return challenges;
+    return challenges.filter(c => c.category === selectedCategory);
+  }, [challenges, selectedCategory]);
 
   useEffect(() => {
     fetchChallenges();
@@ -212,15 +223,43 @@ const Arena = () => {
           </div>
         </div>
 
+        {/* Category Filter */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          <button
+            onClick={() => setSelectedCategory("all")}
+            className={`px-4 py-2 rounded-lg font-mono text-sm transition-all border ${
+              selectedCategory === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card/50 text-muted-foreground border-border hover:border-primary/30"
+            }`}
+          >
+            <Filter className="inline h-3.5 w-3.5 mr-1.5" />
+            Tous
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-lg font-mono text-sm transition-all border ${
+                selectedCategory === cat
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card/50 text-muted-foreground border-border hover:border-primary/30"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
         {/* Challenges Grid */}
-        {challenges.length === 0 ? (
+        {filteredChallenges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Terminal className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Aucun challenge disponible pour le moment</p>
+            <p>Aucun challenge dans cette catégorie</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {challenges.map((challenge, index) => (
+            {filteredChallenges.map((challenge, index) => (
               <div
                 key={challenge.id}
                 className="animate-fade-in"
