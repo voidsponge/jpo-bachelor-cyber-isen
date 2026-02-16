@@ -691,206 +691,256 @@ const Admin = () => {
                     Nouveau Challenge
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg bg-card">
-                  <DialogHeader>
-                    <DialogTitle className="font-mono">
+                <DialogContent className="max-w-2xl bg-card max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="pb-2 border-b border-border">
+                    <DialogTitle className="font-mono text-xl flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
+                        {editingChallenge ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
+                      </div>
                       {editingChallenge ? "Modifier le challenge" : "Nouveau challenge"}
                     </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Titre</Label>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        required
-                        className="bg-background"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+                    {/* Section: Informations générales */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <FileText className="h-3.5 w-3.5" />
+                        Informations générales
+                      </h3>
                       <div className="space-y-2">
-                        <Label>Catégorie</Label>
-                        <Select
-                          value={formData.category}
-                          onValueChange={(value: ChallengeCategory) => setFormData({ ...formData, category: value })}
-                        >
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Web">Web</SelectItem>
-                            <SelectItem value="OSINT">OSINT</SelectItem>
-                            <SelectItem value="Crypto">Crypto</SelectItem>
-                            <SelectItem value="Stegano">Stegano</SelectItem>
-                            <SelectItem value="Logic">Logic</SelectItem>
-                            <SelectItem value="Forensics">Forensics</SelectItem>
-                            <SelectItem value="QR CODE">QR CODE</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label>Titre</Label>
+                        <Input
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          required
+                          placeholder="Nom du challenge"
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-2">
+                          <Label>Catégorie</Label>
+                          <Select
+                            value={formData.category}
+                            onValueChange={(value: ChallengeCategory) => setFormData({ ...formData, category: value })}
+                          >
+                            <SelectTrigger className="bg-background">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Web">Web</SelectItem>
+                              <SelectItem value="OSINT">OSINT</SelectItem>
+                              <SelectItem value="Crypto">Crypto</SelectItem>
+                              <SelectItem value="Stegano">Stegano</SelectItem>
+                              <SelectItem value="Logic">Logic</SelectItem>
+                              <SelectItem value="Forensics">Forensics</SelectItem>
+                              <SelectItem value="QR CODE">QR CODE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Points</Label>
+                          <Input
+                            type="number"
+                            value={formData.points}
+                            onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                            required
+                            min={10}
+                            max={1000}
+                            className="bg-background"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-1.5">
+                            <Skull className="h-3.5 w-3.5" />
+                            Difficulté
+                          </Label>
+                          <Select
+                            value={formData.difficulty.toString()}
+                            onValueChange={(value) => setFormData({ ...formData, difficulty: parseInt(value) })}
+                          >
+                            <SelectTrigger className="bg-background">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">💀 Facile</SelectItem>
+                              <SelectItem value="2">💀💀 Moyen</SelectItem>
+                              <SelectItem value="3">💀💀💀 Difficile</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Points</Label>
-                        <Input
-                          type="number"
-                          value={formData.points}
-                          onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                        <Label>Description</Label>
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           required
-                          min={10}
-                          max={1000}
+                          rows={3}
+                          placeholder="Description du challenge visible par les participants"
+                          className="bg-background resize-y"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Indice (optionnel)</Label>
+                        <Input
+                          value={formData.hint}
+                          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
+                          placeholder="Un indice pour aider les participants"
                           className="bg-background"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        required
-                        rows={3}
-                        className="bg-background"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Indice (optionnel)</Label>
-                      <Input
-                        value={formData.hint}
-                        onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-                        className="bg-background"
-                      />
-                    </div>
-                    
-                    {/* File Upload Section */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Fichier joint (optionnel)
-                      </Label>
-                      {formData.file_url ? (
-                        <div className="flex items-center gap-2 p-3 bg-background rounded-lg border">
-                          <FileText className="h-5 w-5 text-primary" />
-                          <a 
-                            href={formData.file_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex-1 text-sm text-primary hover:underline truncate"
-                          >
-                            {formData.file_url.split('/').pop()}
-                          </a>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={removeFile}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="relative">
+
+                    <div className="border-t border-border" />
+
+                    {/* Section: Ressources */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Upload className="h-3.5 w-3.5" />
+                        Ressources & Connexion
+                      </h3>
+                      {/* File Upload */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          Fichier joint (optionnel)
+                        </Label>
+                        {formData.file_url ? (
+                          <div className="flex items-center gap-2 p-3 bg-background rounded-lg border">
+                            <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+                            <a 
+                              href={formData.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex-1 text-sm text-primary hover:underline truncate"
+                            >
+                              {formData.file_url.split('/').pop()}
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeFile}
+                              className="text-destructive hover:text-destructive flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <Input
+                              type="file"
+                              onChange={handleFileUpload}
+                              disabled={isUploading}
+                              className="bg-background cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                              accept="image/*,.pdf,.zip,.pcap,.txt,.py,.js,.html,.css,.json,.xml,.csv,.doc,.docx"
+                            />
+                            {isUploading && (
+                              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Images, PDF, ZIP, PCAP, scripts... (max 10 Mo)
+                        </p>
+                      </div>
+                      {/* External URL */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          URL Externe (Docker/VM)
+                        </Label>
+                        <div className="flex gap-2">
                           <Input
-                            type="file"
-                            onChange={handleFileUpload}
-                            disabled={isUploading}
-                            className="bg-background cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                            accept="image/*,.pdf,.zip,.pcap,.txt,.py,.js,.html,.css,.json,.xml,.csv,.doc,.docx"
+                            value={formData.external_url}
+                            onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                            placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
+                            className="bg-background font-mono text-sm flex-1"
                           />
-                          {isUploading && (
-                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
-                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                            </div>
+                          {formData.external_url && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`${formData.external_url}/api/verify`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ flag: 'TEST_CONNECTION' }),
+                                  });
+                                  if (response.ok) {
+                                    toast({ title: "✅ API accessible", description: "L'endpoint répond correctement." });
+                                  } else {
+                                    toast({ title: "❌ Erreur API", description: `HTTP ${response.status}`, variant: "destructive" });
+                                  }
+                                } catch (error) {
+                                  toast({ title: "❌ Connexion impossible", description: "Vérifiez l'URL et que le serveur est accessible.", variant: "destructive" });
+                                }
+                              }}
+                              className="whitespace-nowrap"
+                            >
+                              Tester API
+                            </Button>
                           )}
                         </div>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Images, PDF, ZIP, PCAP, scripts... (max 10 Mo)
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>URL Externe (Docker/VM)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={formData.external_url}
-                          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                          placeholder="http://192.168.1.10:8080 ou https://chall.example.com"
-                          className="bg-background font-mono text-sm flex-1"
-                        />
-                        {formData.external_url && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`${formData.external_url}/api/verify`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ flag: 'TEST_CONNECTION' }),
-                                });
-                                if (response.ok) {
-                                  toast({ title: "✅ API accessible", description: "L'endpoint répond correctement." });
-                                } else {
-                                  toast({ title: "❌ Erreur API", description: `HTTP ${response.status}`, variant: "destructive" });
-                                }
-                              } catch (error) {
-                                toast({ title: "❌ Connexion impossible", description: "Vérifiez l'URL et que le serveur est accessible.", variant: "destructive" });
-                              }
-                            }}
-                            className="whitespace-nowrap"
-                          >
-                            Tester API
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Lien vers un container Docker ou une VM hébergeant le challenge
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel si géré par l'API externe)</span>}</Label>
-                      <Input
-                        value={formData.flag}
-                        onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                        required={!formData.external_url}
-                        placeholder={formData.external_url ? "Géré par l'API externe ou remplis ici" : "ISEN{...}"}
-                        className="bg-background font-mono"
-                      />
-                      {formData.external_url && (
-                        <p className="text-xs text-emerald-500">
-                          ✓ Le flag peut être vérifié via l'API externe ({formData.external_url}/api/verify)
+                        <p className="text-xs text-muted-foreground">
+                          Lien vers un container Docker ou une VM hébergeant le challenge
                         </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <Skull className="h-4 w-4" />
-                        Difficulté
-                      </Label>
-                      <Select
-                        value={formData.difficulty.toString()}
-                        onValueChange={(value) => setFormData({ ...formData, difficulty: parseInt(value) })}
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">💀 Facile</SelectItem>
-                          <SelectItem value="2">💀💀 Moyen</SelectItem>
-                          <SelectItem value="3">💀💀💀 Difficile</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                      />
-                      <Label>Challenge actif</Label>
+                    <div className="border-t border-border" />
+
+                    {/* Section: Flag & Paramètres */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5" />
+                        Flag & Paramètres
+                      </h3>
+                      <div className="space-y-2">
+                        <Label>
+                          Flag (réponse) {formData.external_url && <span className="text-muted-foreground font-normal">(optionnel si géré par l'API externe)</span>}
+                        </Label>
+                        <Input
+                          value={formData.flag}
+                          onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
+                          required={!formData.external_url}
+                          placeholder={formData.external_url ? "Géré par l'API externe ou remplis ici" : "ISEN{...}"}
+                          className="bg-background font-mono"
+                        />
+                        {formData.external_url && (
+                          <p className="text-xs text-emerald-500">
+                            ✓ Le flag peut être vérifié via l'API externe ({formData.external_url}/api/verify)
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${formData.is_active ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
+                          <Label className="cursor-pointer mb-0">Challenge actif</Label>
+                        </div>
+                        <Switch
+                          checked={formData.is_active}
+                          onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                        />
+                      </div>
                     </div>
-                    <Button type="submit" className="w-full">
-                      {editingChallenge ? "Mettre à jour" : "Créer le challenge"}
+
+                    <Button type="submit" className="w-full font-mono gap-2" size="lg">
+                      {editingChallenge ? (
+                        <>
+                          <Pencil className="h-4 w-4" />
+                          Mettre à jour
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Créer le challenge
+                        </>
+                      )}
                     </Button>
                   </form>
                 </DialogContent>
