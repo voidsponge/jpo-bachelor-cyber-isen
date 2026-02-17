@@ -2,19 +2,17 @@ import discord
 import random
 import os
 import aiohttp
+from flag_store import flag_store
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- CONFIGURATION PLATEFORME CTF ---
-# L'URL de l'edge function de ta plateforme
 SUPABASE_URL = "https://qjwzplhclyjefueswncx.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqd3pwbGhjbHlqZWZ1ZXN3bmN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzA0NjYsImV4cCI6MjA4MTQ0NjQ2Nn0.VzoX79TA7sTST_y1g6nlTLJjrWEAmrmeESFbunG3iik"
 RECORD_SUBMISSION_URL = f"{SUPABASE_URL}/functions/v1/record-external-submission"
 
 # L'ID du challenge Discord sur ta plateforme (à récupérer depuis le panel admin)
 CHALLENGE_ID = "REMPLACE_PAR_TON_CHALLENGE_ID"
-
-# Chemin du fichier où le flag est sauvegardé
-FLAG_FILE = os.path.join(BASE_DIR, "flag.txt")
 
 
 def load_words(filename):
@@ -26,30 +24,31 @@ def load_words(filename):
     return words
 
 
-def generate_composed_word():
+def generate_flag():
     names = load_words("FG_NAME")
     adjs = load_words("FG_ADJ")
-    return f"{random.choice(names)}_{random.choice(adjs)}"
-
-
-def save_flag(pseudo: str, flag: str):
-    """Écrase le fichier flag.txt avec le nouveau flag généré."""
-    with open(FLAG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"Joueur : {pseudo}\n")
-        f.write(f"Flag   : {flag}\n")
+    return "ISEN{" + f"{random.choice(names)}_{random.choice(adjs)}" + "}"
 
 
 async def report_to_platform(pseudo: str, flag: str, discord_user_id: str):
     """Envoie le flag validé à la plateforme CTF pour créditer les points."""
+    session_id = f"discord_{discord_user_id}"
     payload = {
         "challengeId": CHALLENGE_ID,
         "submittedFlag": flag,
-        "sessionId": f"discord_{discord_user_id}",
+        "sessionId": session_id,
         "pseudo": pseudo,
     }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(RECORD_SUBMISSION_URL, json=payload) as resp:
+            async with session.post(
+                RECORD_SUBMISSION_URL,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                },
+            ) as resp:
                 data = await resp.json()
                 return data
     except Exception as e:
@@ -57,30 +56,39 @@ async def report_to_platform(pseudo: str, flag: str, discord_user_id: str):
         return None
 
 
-# --- LA FENÊTRE SURGISSANTE (MODAL) ---
+# --- MODAL PSEUDO ---
 class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
     pseudo = discord.ui.TextInput(
-        label="Quel est ton pseudo ?",
-        placeholder="Entre ton pseudo ici...",
-        min_length=3,
-        max_length=20,
+        label="Quel est ton pseudo sur la plateforme CTF ?",
+        placeholder="Entre le même pseudo que sur le site CTF...",
+        min_length=2,
+        max_length=30,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Génération du flag
-        dynamic_flag = "ISEN{" + generate_composed_word() + "}"
+        discord_user_id = str(interaction.user.id)
+        pseudo_value = self.pseudo.value.strip()
 
-        # Sauvegarde locale
-        save_flag(self.pseudo.value, dynamic_flag)
+        # Générer le flag
+        flag = generate_flag()
 
-        # Envoi à la plateforme CTF
-        result = await report_to_platform(
-            pseudo=self.pseudo.value,
-            flag=dynamic_flag,
-            discord_user_id=str(interaction.user.id),
+        # Sauvegarder dans le store (lien pseudo <-> session <-> flag)
+        session_id = f"discord_{discord_user_id}"
+        flag_store.save(
+            discord_user_id=discord_user_id,
+            pseudo=pseudo_value,
+            session_id=session_id,
+            flag=flag,
         )
 
-        # Construction du message de réponse
+        # Envoyer à la plateforme CTF
+        result = await report_to_platform(
+            pseudo=pseudo_value,
+            flag=flag,
+            discord_user_id=discord_user_id,
+        )
+
+        # Construire la réponse
         if result and result.get("correct"):
             points = result.get("points", "?")
             score = result.get("score", "?")
@@ -88,24 +96,24 @@ class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
 
             if result.get("alreadyFound"):
                 msg = (
-                    f"⚠️ **{self.pseudo.value}**, tu as déjà résolu ce challenge !\n"
-                    f"Ton flag était : `{dynamic_flag}`"
+                    f"⚠️ **{pseudo_value}**, tu as déjà résolu ce challenge !\n"
+                    f"Ton flag était : `{flag}`"
                 )
             else:
                 msg = (
-                    f"🎉 Bravo **{self.pseudo.value}** !\n\n"
-                    f"🚩 Flag : `{dynamic_flag}`\n"
+                    f"🎉 Bravo **{pseudo_value}** !\n\n"
+                    f"🚩 Flag : `{flag}`\n"
                     f"💰 **+{points} points** crédités sur la plateforme CTF !\n"
                     f"📊 Score total : **{score} pts** | Flags trouvés : **{total_flags}**"
                 )
         elif result and not result.get("correct"):
             msg = (
-                f"Voici ton flag **{self.pseudo.value}** : `{dynamic_flag}`\n"
+                f"Voici ton flag **{pseudo_value}** : `{flag}`\n"
                 f"⚠️ Le flag n'a pas été validé sur la plateforme."
             )
         else:
             msg = (
-                f"Voici ton flag **{self.pseudo.value}** : `{dynamic_flag}`\n"
+                f"Voici ton flag **{pseudo_value}** : `{flag}`\n"
                 f"⚠️ Impossible de contacter la plateforme CTF. "
                 f"Tes points n'ont pas été crédités."
             )
@@ -113,7 +121,7 @@ class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
         await interaction.response.send_message(msg, ephemeral=True)
 
 
-# --- LA VUE AVEC LE BOUTON ---
+# --- VUE AVEC BOUTON ---
 class CTFView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
