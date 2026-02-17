@@ -25,6 +25,7 @@ export type Database = {
           external_url: string | null
           file_url: string | null
           flag: string
+          hide_flag_submission: boolean
           hint: string | null
           id: string
           is_active: boolean
@@ -43,6 +44,7 @@ export type Database = {
           external_url?: string | null
           file_url?: string | null
           flag: string
+          hide_flag_submission?: boolean
           hint?: string | null
           id?: string
           is_active?: boolean
@@ -61,6 +63,7 @@ export type Database = {
           external_url?: string | null
           file_url?: string | null
           flag?: string
+          hide_flag_submission?: boolean
           hint?: string | null
           id?: string
           is_active?: boolean

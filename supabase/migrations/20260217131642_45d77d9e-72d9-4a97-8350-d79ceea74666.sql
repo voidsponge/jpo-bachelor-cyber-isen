@@ -1,0 +1,1 @@
+ALTER TABLE public.challenges ADD COLUMN hide_flag_submission boolean NOT NULL DEFAULT false;
