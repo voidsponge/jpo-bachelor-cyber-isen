@@ -22,6 +22,7 @@ interface Challenge {
   difficulty?: number;
   isTerminalChallenge?: boolean;
   externalUrl?: string | null;
+  hideFlagSubmission?: boolean;
 }
 
 // Confetti celebration function
@@ -338,6 +339,11 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
             <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-primary/10 border border-primary/30">
               <CheckCircle2 className="h-5 w-5 text-primary" />
               <span className="font-mono text-primary">Challenge résolu !</span>
+            </div>
+          ) : challenge.hideFlagSubmission ? (
+            <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-secondary/50 border border-border">
+              <ExternalLink className="h-5 w-5 text-muted-foreground" />
+              <span className="font-mono text-muted-foreground text-sm">La validation se fait directement dans le challenge</span>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

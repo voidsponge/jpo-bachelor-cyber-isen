@@ -32,6 +32,7 @@ interface Challenge {
   hint: string | null;
   flag: string;
   is_active: boolean;
+  hide_flag_submission: boolean;
   created_at: string;
   difficulty: number;
   is_terminal_challenge: boolean;
@@ -75,6 +76,7 @@ const Admin = () => {
     hint: "",
     flag: "",
     is_active: true,
+    hide_flag_submission: false,
     difficulty: 1,
     external_url: "",
     file_url: "",
@@ -310,6 +312,7 @@ const Admin = () => {
       hint: challenge.hint || "",
       flag: challenge.flag,
       is_active: challenge.is_active,
+      hide_flag_submission: challenge.hide_flag_submission || false,
       difficulty: challenge.difficulty || 1,
       external_url: challenge.external_url || "",
       file_url: challenge.file_url || "",
@@ -327,6 +330,7 @@ const Admin = () => {
       hint: "",
       flag: "",
       is_active: true,
+      hide_flag_submission: false,
       difficulty: 1,
       external_url: "",
       file_url: "",
@@ -925,6 +929,16 @@ const Admin = () => {
                         <Switch
                           checked={formData.is_active}
                           onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${formData.hide_flag_submission ? 'bg-yellow-500' : 'bg-muted-foreground'}`} />
+                          <Label className="cursor-pointer mb-0">Masquer soumission de flag</Label>
+                        </div>
+                        <Switch
+                          checked={formData.hide_flag_submission}
+                          onCheckedChange={(checked) => setFormData({ ...formData, hide_flag_submission: checked })}
                         />
                       </div>
                     </div>

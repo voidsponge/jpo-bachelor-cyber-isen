@@ -22,6 +22,7 @@ interface Challenge {
   externalUrl?: string | null;
   dockerImage?: string | null;
   dockerPorts?: string | null;
+  hideFlagSubmission?: boolean;
 }
 
 // Get session ID for anonymous players
@@ -59,7 +60,7 @@ const Arena = () => {
       // Fetch active challenges from the public view (excludes flag column)
       const { data: challengesData, error: challengesError } = await supabase
         .from("challenges_public")
-        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url, docker_image, docker_ports")
+        .select("id, title, category, points, description, hint, file_url, difficulty, is_terminal_challenge, external_url, docker_image, docker_ports, hide_flag_submission")
         .eq("is_active", true)
         .order("points", { ascending: true }) as { data: any[] | null; error: any };
 
@@ -114,6 +115,7 @@ const Arena = () => {
         externalUrl: c.external_url || null,
         dockerImage: c.docker_image || null,
         dockerPorts: c.docker_ports || null,
+        hideFlagSubmission: c.hide_flag_submission || false,
       }));
 
       setChallenges(formattedChallenges);
