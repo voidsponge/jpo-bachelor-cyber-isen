@@ -30,9 +30,29 @@ def generate_flag():
     return "ISEN{" + f"{random.choice(names)}_{random.choice(adjs)}" + "}"
 
 
-async def report_to_platform(pseudo: str, flag: str, discord_user_id: str):
+async def find_player_session(pseudo: str):
+    """Cherche le joueur existant par pseudo sur la plateforme CTF."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = f"{SUPABASE_URL}/rest/v1/players?pseudo=eq.{pseudo}&select=session_id,id"
+            async with session.get(
+                url,
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                },
+            ) as resp:
+                data = await resp.json()
+                if data and len(data) > 0:
+                    return data[0]["session_id"]
+                return None
+    except Exception as e:
+        print(f"Erreur lors de la recherche du joueur : {e}")
+        return None
+
+
+async def report_to_platform(pseudo: str, flag: str, session_id: str):
     """Envoie le flag validé à la plateforme CTF pour créditer les points."""
-    session_id = f"discord_{discord_user_id}"
     payload = {
         "challengeId": CHALLENGE_ID,
         "submittedFlag": flag,
@@ -69,11 +89,20 @@ class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
         discord_user_id = str(interaction.user.id)
         pseudo_value = self.pseudo.value.strip()
 
+        # Chercher le joueur existant sur la plateforme par pseudo
+        session_id = await find_player_session(pseudo_value)
+        if not session_id:
+            await interaction.response.send_message(
+                f"❌ Aucun joueur avec le pseudo **{pseudo_value}** trouvé sur la plateforme CTF.\n"
+                f"Assure-toi d'utiliser le même pseudo que sur le site !",
+                ephemeral=True,
+            )
+            return
+
         # Générer le flag
         flag = generate_flag()
 
-        # Sauvegarder dans le store (lien pseudo <-> session <-> flag)
-        session_id = f"discord_{discord_user_id}"
+        # Sauvegarder dans le store
         flag_store.save(
             discord_user_id=discord_user_id,
             pseudo=pseudo_value,
@@ -85,7 +114,7 @@ class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
         result = await report_to_platform(
             pseudo=pseudo_value,
             flag=flag,
-            discord_user_id=discord_user_id,
+            session_id=session_id,
         )
 
         # Construire la réponse
