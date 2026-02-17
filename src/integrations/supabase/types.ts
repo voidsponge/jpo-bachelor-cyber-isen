@@ -289,6 +289,7 @@ export type Database = {
           docker_ports: string | null
           external_url: string | null
           file_url: string | null
+          hide_flag_submission: boolean | null
           hint: string | null
           id: string | null
           is_active: boolean | null
@@ -306,6 +307,7 @@ export type Database = {
           docker_ports?: string | null
           external_url?: string | null
           file_url?: string | null
+          hide_flag_submission?: boolean | null
           hint?: string | null
           id?: string | null
           is_active?: boolean | null
@@ -323,6 +325,7 @@ export type Database = {
           docker_ports?: string | null
           external_url?: string | null
           file_url?: string | null
+          hide_flag_submission?: boolean | null
           hint?: string | null
           id?: string | null
           is_active?: boolean | null
