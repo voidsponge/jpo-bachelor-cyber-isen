@@ -133,7 +133,7 @@ class PseudoModal(discord.ui.Modal, title="Enregistrement CTF"):
                     f"🎉 Bravo **{pseudo_value}** !\n\n"
                     f"🚩 Flag : `{flag}`\n"
                     f"💰 **+{points} points** crédités sur la plateforme CTF !\n"
-                    f"📊 Score total : **{score} pts** | Flags trouvés : **{total_flags}**"
+                    f"🔗 Session ID : `{session_id}` | Flags trouvés : **{total_flags}**"
                 )
         elif result and not result.get("correct"):
             msg = (
