@@ -253,40 +253,39 @@ const ChallengeCard = ({ challenge, onClick }: ChallengeCardProps) => {
             top: 0,
             left: 0,
             right: 0,
-            bottom: 0,
           }}
         >
           <Card
             onClick={onClick}
-            className="cursor-pointer h-full border-yellow-500/60 bg-gradient-to-br from-yellow-950/60 via-card/80 to-yellow-900/30 backdrop-blur-sm overflow-hidden"
+            className="cursor-pointer border-yellow-500/60 bg-gradient-to-br from-yellow-950/60 via-card/80 to-yellow-900/30 backdrop-blur-sm overflow-hidden"
             style={{ boxShadow: "0 0 30px hsl(40 100% 50% / 0.3), inset 0 0 30px hsl(40 100% 50% / 0.05)" }}
           >
             {/* Shine effect */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-400/10 to-transparent pointer-events-none" />
 
-            <CardContent className="flex flex-col items-center justify-center h-full py-8 gap-4 relative">
+            <CardContent className="flex flex-col items-center justify-center py-6 gap-3 relative">
               {/* Gold trophy */}
               <div className="relative">
                 <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl scale-150" />
-                <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg"
+                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg"
                   style={{ boxShadow: "0 0 20px hsl(40 100% 50% / 0.6)" }}>
-                  <Trophy className="h-8 w-8 text-yellow-950" />
+                  <Trophy className="h-7 w-7 text-yellow-950" />
                 </div>
               </div>
 
-              <div className="text-center space-y-1">
+              <div className="text-center space-y-0.5">
                 <p className="font-mono text-xs text-yellow-400/70 uppercase tracking-widest">Flag capturé</p>
-                <h3 className="font-mono text-base font-bold text-yellow-300 line-clamp-2 text-center px-2">
+                <h3 className="font-mono text-sm font-bold text-yellow-300 line-clamp-2 text-center px-2">
                   {challenge.title}
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/30 rounded-full px-4 py-1.5">
-                <span className="font-mono text-xl font-bold text-yellow-400">+{challenge.points}</span>
+              <div className="flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/30 rounded-full px-3 py-1">
+                <span className="font-mono text-lg font-bold text-yellow-400">+{challenge.points}</span>
                 <span className="font-mono text-xs text-yellow-500">pts</span>
               </div>
 
-              <p className="font-mono text-xs text-yellow-600/60 mt-1">Cliquer pour détails</p>
+              <p className="font-mono text-xs text-yellow-600/60">Cliquer pour détails</p>
             </CardContent>
           </Card>
         </div>
