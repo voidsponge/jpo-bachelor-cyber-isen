@@ -341,9 +341,23 @@ const ChallengeModal = ({ challenge, isOpen, onClose, onSolve }: ChallengeModalP
               <span className="font-mono text-primary">Challenge résolu !</span>
             </div>
           ) : challenge.hideFlagSubmission ? (
-            <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-secondary/50 border border-border">
-              <ExternalLink className="h-5 w-5 text-muted-foreground" />
-              <span className="font-mono text-muted-foreground text-sm">La validation se fait directement dans le challenge</span>
+            <div className="space-y-4">
+              {!user && (
+                <div className="relative">
+                  <Input
+                    value={pseudo}
+                    onChange={(e) => setPseudo(e.target.value)}
+                    placeholder="Ton pseudo"
+                    className="font-mono bg-background border-border pr-10 focus:border-primary focus:ring-primary"
+                    maxLength={30}
+                  />
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-secondary/50 border border-border">
+                <ExternalLink className="h-5 w-5 text-muted-foreground" />
+                <span className="font-mono text-muted-foreground text-sm">La validation se fait directement dans le challenge</span>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
